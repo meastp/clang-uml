@@ -21,6 +21,7 @@
 #include "translation_unit_context.h"
 
 #include <cppast/cpp_function.hpp>
+#include <cppast/cpp_function_template.hpp>
 #include <cppast/cpp_member_function.hpp>
 #include <cppast/visitor.hpp>
 
@@ -56,23 +57,30 @@ void translation_unit_visitor::process_activities(const cppast::cpp_function &e)
 
         if (!ctx.entity_index()
                  .lookup_definition(function_call.get_caller_id())
-                 .has_value())
-            continue;
+                 .has_value()) {
+            throw std::runtime_error("Cannot resolve caller id");
+            // continue;
+        }
 
         if (!ctx.entity_index()
                  .lookup_definition(function_call.get_caller_method_id())
-                 .has_value())
-            continue;
-
+                 .has_value()) {
+            throw std::runtime_error("Cannot resolve caller method id");
+            // continue;
+        }
         if (!ctx.entity_index()
                  .lookup_definition(function_call.get_callee_id())
-                 .has_value())
-            continue;
+                 .has_value()) {
+            throw std::runtime_error("Cannot resolve callee id");
+            // continue;
+        }
 
         if (!ctx.entity_index()
                  .lookup_definition(function_call.get_callee_method_id())
-                 .has_value())
-            continue;
+                 .has_value()) {
+            throw std::runtime_error("Cannot resolve callee method id");
+            // continue;
+        }
 
         const auto &caller =
             ctx.entity_index()
@@ -80,8 +88,8 @@ void translation_unit_visitor::process_activities(const cppast::cpp_function &e)
                 .value();
         m.from = cx::util::ns(caller) + "::" + caller.name();
 
-        if (!ctx.config().should_include(m.from))
-            continue;
+        //if (!ctx.config().should_include(m.from))
+            //continue;
 
         if (caller.kind() == cpp_entity_kind::function_t)
             m.from += "()";
@@ -92,12 +100,13 @@ void translation_unit_visitor::process_activities(const cppast::cpp_function &e)
             ctx.entity_index()
                 .lookup_definition(function_call.get_callee_id())
                 .value();
-        m.to = cx::util::ns(callee) + "::" + callee.name();
+        m.to = /*cx::util::ns(callee) + "::" + callee.name() + "|" +*/ typeid(&callee).name();
+
         if (callee.kind() == cpp_entity_kind::function_t)
             m.to += "()";
 
-        if (!ctx.config().should_include(m.to))
-            continue;
+        //if (!ctx.config().should_include(m.to))
+            //continue;
 
         m.to_usr = type_safe::get(function_call.get_callee_method_id());
 
@@ -109,7 +118,7 @@ void translation_unit_visitor::process_activities(const cppast::cpp_function &e)
 
         m.message = callee_method.name();
 
-        m.return_type = cppast::to_string(callee_method.return_type());
+        //m.return_type = cppast::to_string(callee_method.return_type());
 
         if (ctx.diagram().sequences.find(m.from_usr) ==
             ctx.diagram().sequences.end()) {
@@ -130,6 +139,8 @@ void translation_unit_visitor::operator()(const cppast::cpp_entity &file)
     using cppast::cpp_entity;
     using cppast::cpp_entity_kind;
     using cppast::cpp_function;
+    using cppast::cpp_function_template;
+    using cppast::cpp_function_template_specialization;
     using cppast::cpp_member_function;
     using cppast::cpp_member_function_call;
     using cppast::visitor_info;
@@ -142,6 +153,19 @@ void translation_unit_visitor::operator()(const cppast::cpp_entity &file)
         else if (e.kind() == cpp_entity_kind::member_function_t) {
             const auto &member_function = static_cast<const cpp_function &>(e);
             process_activities(member_function);
+        }
+        else if (e.kind() == cpp_entity_kind::function_template_t) {
+            const auto &function_template = static_cast<const cpp_function &>(
+                static_cast<const cpp_function_template &>(e).function());
+            process_activities(function_template);
+        }
+        else if (e.kind() ==
+            cpp_entity_kind::function_template_specialization_t) {
+            const auto &function_template_specialization =
+                static_cast<const cpp_function &>(
+                    static_cast<const cpp_function_template_specialization &>(e)
+                        .function());
+            process_activities(function_template_specialization);
         }
     });
 }
