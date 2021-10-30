@@ -88,11 +88,13 @@ void translation_unit_visitor::process_activities(const cppast::cpp_function &e)
                 .value();
         m.from = cx::util::ns(caller) + "::" + caller.name();
 
-        //if (!ctx.config().should_include(m.from))
-            //continue;
+        // if (!ctx.config().should_include(m.from))
+        // continue;
 
         if (caller.kind() == cpp_entity_kind::function_t)
             m.from += "()";
+        else if(caller.kind() == cpp_entity_kind::function_template_specialization_t)
+            m.to += "()";
 
         m.from_usr = type_safe::get(function_call.get_caller_method_id());
 
@@ -100,13 +102,20 @@ void translation_unit_visitor::process_activities(const cppast::cpp_function &e)
             ctx.entity_index()
                 .lookup_definition(function_call.get_callee_id())
                 .value();
-        m.to = /*cx::util::ns(callee) + "::" + callee.name() + "|" +*/ typeid(&callee).name();
+
+        auto callee_ns = cx::util::ns(callee);
+        if (callee_ns.empty())
+            m.to = callee.name();
+        else
+            m.to = "::" + callee.name();
 
         if (callee.kind() == cpp_entity_kind::function_t)
             m.to += "()";
+        else if(callee.kind() == cpp_entity_kind::function_template_specialization_t)
+            m.to += "()";
 
-        //if (!ctx.config().should_include(m.to))
-            //continue;
+        // if (!ctx.config().should_include(m.to))
+        // continue;
 
         m.to_usr = type_safe::get(function_call.get_callee_method_id());
 
@@ -118,7 +127,7 @@ void translation_unit_visitor::process_activities(const cppast::cpp_function &e)
 
         m.message = callee_method.name();
 
-        //m.return_type = cppast::to_string(callee_method.return_type());
+        // m.return_type = cppast::to_string(callee_method.return_type());
 
         if (ctx.diagram().sequences.find(m.from_usr) ==
             ctx.diagram().sequences.end()) {
