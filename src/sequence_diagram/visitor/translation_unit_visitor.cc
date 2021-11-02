@@ -86,15 +86,22 @@ void translation_unit_visitor::process_activities(const cppast::cpp_function &e)
             ctx.entity_index()
                 .lookup_definition(function_call.get_caller_id())
                 .value();
-        m.from = cx::util::ns(caller) + "::" + caller.name();
+        auto caller_ns = cx::util::ns(caller);
+        if (caller_ns.empty())
+            m.from = caller.name();
+        else
+            m.from = caller_ns + "::" + caller.name();
 
         // if (!ctx.config().should_include(m.from))
         // continue;
 
         if (caller.kind() == cpp_entity_kind::function_t)
             m.from += "()";
-        else if(caller.kind() == cpp_entity_kind::function_template_specialization_t)
-            m.to += "()";
+        else if (caller.kind() == cpp_entity_kind::function_template_t)
+            m.from += "()";
+        else if (caller.kind() ==
+            cpp_entity_kind::function_template_specialization_t)
+            m.from += "()";
 
         m.from_usr = type_safe::get(function_call.get_caller_method_id());
 
@@ -107,11 +114,14 @@ void translation_unit_visitor::process_activities(const cppast::cpp_function &e)
         if (callee_ns.empty())
             m.to = callee.name();
         else
-            m.to = "::" + callee.name();
+            m.to = callee_ns + "::" + callee.name();
 
         if (callee.kind() == cpp_entity_kind::function_t)
             m.to += "()";
-        else if(callee.kind() == cpp_entity_kind::function_template_specialization_t)
+        else if (callee.kind() == cpp_entity_kind::function_template_t)
+            m.to += "()";
+        else if (callee.kind() ==
+            cpp_entity_kind::function_template_specialization_t)
             m.to += "()";
 
         // if (!ctx.config().should_include(m.to))
@@ -137,7 +147,8 @@ void translation_unit_visitor::process_activities(const cppast::cpp_function &e)
             ctx.diagram().sequences.insert({m.from_usr, std::move(a)});
         }
 
-        LOG_DBG("Adding sequence {} -{}()-> {}", m.from, m.message, m.to);
+        LOG_DBG("Adding sequence {} -[{}()]-> {}, {}->{}", m.from, m.message, m.to,
+            m.from_usr, m.to_usr);
 
         ctx.diagram().sequences[m.from_usr].messages.emplace_back(std::move(m));
     }
