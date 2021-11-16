@@ -19,3 +19,5 @@ bin/
 /release/
 /.cache
 /.vscode
+/.idea/
+/cmake-build-debug/
