@@ -86,10 +86,14 @@ void generator::generate_activity(const activity &a, std::ostream &ostr) const
     for (const auto &m : a.messages) {
         const auto to = ns_relative(m_config.using_namespace, m.to);
         generate_call(m, ostr);
+
         ostr << "activate " << '"' << to << '"' << std::endl;
+
         if (m_model.sequences.find(m.to_usr) != m_model.sequences.end())
             generate_activity(m_model.sequences[m.to_usr], ostr);
+
         generate_return(m, ostr);
+
         ostr << "deactivate " << '"' << to << '"' << std::endl;
     }
 }
