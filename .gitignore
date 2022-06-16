@@ -19,6 +19,8 @@ bin/
 /release/
 /.cache
 docs/diagrams
+/out/
+.vs/
 
 coverage*.info
 

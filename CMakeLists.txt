@@ -31,6 +31,8 @@ find_package(Threads REQUIRED)
 message(STATUS "Checking for yaml-cpp...")
 find_package(yaml-cpp REQUIRED)
 
+find_package(zlib REQUIRED)
+
 message(STATUS "Checking for libclang...")
 set(LLVM_PREFERRED_VERSION 12.0.0)
 # Add
@@ -38,7 +40,15 @@ set(LLVM_PREFERRED_VERSION 12.0.0)
 # to use custom LLVM version
 find_package(LibClang REQUIRED)
 
+if ((CMAKE_CXX_COMPILER_ID STREQUAL "GNU") OR (CMAKE_CXX_COMPILER_ID STREQUAL "Clang"))
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wall -Wextra -std=c++17 ${LIBCLANG_CXXFLAGS}")
+endif()
+if(MSVC)
+#set(CMAKE_EXE_LINKER_FLAGS "-static")
+#target_link_libraries(datastream ws2_32)
+add_definitions(-DUNICODE -D_UNICODE)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3 /std:c++17 ${LIBCLANG_CXXFLAGS}")
+endif(MSVC)
 
 message(STATUS "Using CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
 
@@ -80,7 +90,7 @@ list(REMOVE_ITEM SOURCES ${MAIN_SOURCE_FILE})
 add_library(clang-umllib OBJECT ${SOURCES})
 
 add_executable(clang-uml ${MAIN_SOURCE_FILE})
-target_link_libraries(clang-uml ${LIBCLANG_LIBRARIES} ${YAML_CPP_LIBRARIES} cppast clang-umllib Threads::Threads)
+target_link_libraries(clang-uml ${LIBCLANG_LIBRARIES} ${YAML_CPP_LIBRARIES} ${ZLIB_LIBRARIES} cppast clang-umllib Threads::Threads)
 
 target_compile_features(clang-uml PRIVATE cxx_std_17)
 

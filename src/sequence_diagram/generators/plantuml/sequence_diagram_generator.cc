@@ -49,7 +49,7 @@ void generator::generate_call(const message &m, std::ostream &ostr) const
 
     ostr << '"' << from << "\" "
          << common::generators::plantuml::to_plantuml(message_t::kCall) << " \""
-         << to << "\" : " << m.message << "()" << std::endl;
+         << to << "\" : " << m.msg << "()" << std::endl;
 }
 
 void generator::generate_return(const message &m, std::ostream &ostr) const

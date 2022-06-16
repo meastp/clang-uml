@@ -111,7 +111,7 @@ void translation_unit_visitor::process_activities(const cppast::cpp_function &e)
                     .lookup_definition(function_call.get_callee_method_id())
                     .value());
 
-        m.message = callee_method.name();
+        m.msg = callee_method.name();
 
         m.return_type = cppast::to_string(callee_method.return_type());
 
@@ -123,7 +123,7 @@ void translation_unit_visitor::process_activities(const cppast::cpp_function &e)
             ctx.diagram().sequences.insert({m.from_usr, std::move(a)});
         }
 
-        LOG_DBG("Adding sequence {} -{}()-> {}", m.from, m.message, m.to);
+        LOG_DBG("Adding sequence {} -{}()-> {}", m.from, m.msg, m.to);
 
         ctx.diagram().sequences[m.from_usr].messages.emplace_back(std::move(m));
     }

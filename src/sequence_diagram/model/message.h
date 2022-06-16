@@ -25,12 +25,16 @@
 namespace clanguml::sequence_diagram::model {
 
 struct message {
+    message() = default;
+    message(const message &) = default;
+    message(message &&) = default;
+
     common::model::message_t type;
     std::string from;
     std::uint_least64_t from_usr;
     std::string to;
     std::uint_least64_t to_usr;
-    std::string message;
+    std::string msg;
     std::string return_type;
     unsigned int line;
 };

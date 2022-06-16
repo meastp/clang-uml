@@ -4,7 +4,9 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(CMAKE_CXX_STANDARD 17)
 
+if ((CMAKE_CXX_COMPILER_ID STREQUAL "GNU") OR (CMAKE_CXX_COMPILER_ID STREQUAL "Clang"))
 set(TEST_DISABLE_WARNINGS "-Wno-unused-parameter -Wno-unused-variable -Wno-attributes")
+endif()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${LIBCLANG_CXXFLAGS} ${TEST_DISABLE_WARNINGS}")
 
@@ -15,6 +17,7 @@ file(GLOB_RECURSE TEST_CONFIG_YMLS test_config_data/*.yml)
 set(CLANG_UML_TEST_LIBRARIES
         ${LIBCLANG_LIBRARIES}
         ${YAML_CPP_LIBRARIES}
+        ${ZLIB_LIBRARIES}
         clang-umllib
         cppast
         Threads::Threads)

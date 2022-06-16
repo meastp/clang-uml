@@ -42,6 +42,8 @@ std::string get_process_output(const std::string &command)
 {
     std::array<char, 1024> buffer;
     std::string result;
+
+ #if defined(__linux) || (__unix)
     std::unique_ptr<FILE, decltype(&pclose)> pipe(
         popen(command.c_str(), "r"), pclose);
 
@@ -52,18 +54,33 @@ std::string get_process_output(const std::string &command)
     while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
         result += buffer.data();
     }
+#elif defined(WINDOWS) || defined(_WIN32) || defined(WIN32)
 
+#endif
     return result;
 }
 
 std::string get_env(const std::string &name)
 {
+#if defined(__linux) || (__unix)
     const char *value = std::getenv(name.c_str());
 
     if (value == nullptr)
         return {};
 
     return std::string{value};
+#elif defined(WINDOWS) || defined(_WIN32) || defined(WIN32)
+    static constexpr auto kMaxEnvLength = 2096U;
+    static char value[kMaxEnvLength];
+    const DWORD ret =
+        GetEnvironmentVariableA(name.c_str(), value, kMaxEnvLength);
+    if (ret == 0 || ret > kMaxEnvLength)
+        return {};
+    else
+        return value;
+#else
+    return {};
+#endif
 }
 
 bool is_git_repository()

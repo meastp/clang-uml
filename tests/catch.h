@@ -14911,9 +14911,9 @@ public:
     void libIdentify();
 
     int applyCommandLine(int argc, char const *const *argv);
-#if defined(CATCH_CONFIG_WCHAR) && defined(_WIN32) && defined(UNICODE)
+//#if defined(CATCH_CONFIG_WCHAR) && defined(_WIN32) && defined(UNICODE)
     int applyCommandLine(int argc, wchar_t const *const *argv);
-#endif
+//#endif
 
     void useConfigData(ConfigData const &configData);
 
@@ -14921,7 +14921,7 @@ public:
     {
         if (m_startupExceptions)
             return 1;
-        int returnCode = applyCommandLine(argc, argv);
+        int returnCode = applyCommandLine(argc, reinterpret_cast<CharT const *const *>(argv));
         if (returnCode == 0)
             returnCode = run();
         return returnCode;
@@ -15185,7 +15185,7 @@ int Session::applyCommandLine(int argc, char const *const *argv)
     return 0;
 }
 
-#if defined(CATCH_CONFIG_WCHAR) && defined(_WIN32) && defined(UNICODE)
+//#if defined(CATCH_CONFIG_WCHAR) && defined(_WIN32) && defined(UNICODE)
 int Session::applyCommandLine(int argc, wchar_t const *const *argv)
 {
 
@@ -15210,7 +15210,7 @@ int Session::applyCommandLine(int argc, wchar_t const *const *argv)
 
     return returnCode;
 }
-#endif
+//#endif
 
 void Session::useConfigData(ConfigData const &configData)
 {
