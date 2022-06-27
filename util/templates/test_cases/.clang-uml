@@ -5,6 +5,8 @@ diagrams:
     type: {{ type }}
     glob:
       - ../../tests/{{ name }}/{{ name }}.cc
+    using_namespace:
+      - clanguml::{{ name }}
     include:
       namespaces:
         - clanguml::{{ name }}

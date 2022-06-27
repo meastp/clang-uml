@@ -121,6 +121,7 @@ def generate(environment, variables, src, dst, dst_path):
 def main(args):
     if len(args) != 2:
         print("Usage: ./generate_test_cases.py <type> <number>")
+        sys.exit(1)
 
     test_case_type = args[0]
     test_case_number = int(args[1])
