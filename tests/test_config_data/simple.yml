@@ -10,6 +10,7 @@ diagrams:
     using_namespace: clanguml
     generate_method_arguments: full
     generate_packages: true
+    parse_includes: true
     generate_links:
       link: https://github.com/bkryza/clang-uml/blob/{{ git.branch }}/{{ element.source.file }}#L{{ element.source.line }}
       tooltip: "{{ element.comment }}"

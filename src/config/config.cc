@@ -99,6 +99,7 @@ void inheritable_diagram_options::inherit(
     git.override(parent.git);
     base_directory.override(parent.base_directory);
     relative_to.override(parent.relative_to);
+    parse_includes.override(parent.parse_includes);
 }
 
 common::model::diagram_t class_diagram::type() const
@@ -510,6 +511,7 @@ template <> struct convert<class_diagram> {
         get_option(node, rhs.generate_packages);
         get_option(node, rhs.relationship_hints);
         get_option(node, rhs.template_aliases);
+        get_option(node, rhs.parse_includes);
 
         rhs.initialize_relationship_hints();
         rhs.initialize_template_aliases();
@@ -658,6 +660,7 @@ template <> struct convert<config> {
         get_option(node, rhs.generate_packages);
         get_option(node, rhs.generate_links);
         get_option(node, rhs.generate_system_headers);
+        get_option(node, rhs.parse_includes);
         get_option(node, rhs.git);
         rhs.base_directory.set(node["__parent_path"].as<std::string>());
         get_option(node, rhs.relative_to);

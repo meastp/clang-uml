@@ -138,6 +138,7 @@ struct inheritable_diagram_options {
     option<bool> generate_system_headers{"generate_system_headers", false};
     option<relationship_hints_t> relationship_hints{"relationship_hints"};
     option<template_aliases_t> template_aliases{"template_aliases"};
+    option<bool> parse_includes{"parse_includes", false};
 
     void inherit(const inheritable_diagram_options &parent);
 };

@@ -38,6 +38,7 @@ TEST_CASE("Test config simple", "[unit-test]")
     CHECK(diagram.generate_method_arguments() ==
         clanguml::config::method_arguments::full);
     CHECK(diagram.generate_packages() == true);
+    CHECK(diagram.parse_includes() == true);
     CHECK(diagram.generate_links == true);
     CHECK(diagram.generate_links().link ==
         "https://github.com/bkryza/clang-uml/blob/{{ git.branch }}/{{ "

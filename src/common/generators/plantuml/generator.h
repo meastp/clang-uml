@@ -255,7 +255,7 @@ std::unique_ptr<DiagramModel> generate(
 
     // Process all matching translation units
     DiagramVisitor ctx(idx, *diagram, config);
-    cppast::parse_files(parser, translation_units, db);
+    cppast::parse_files(parser, translation_units, db, config.parse_includes());
     for (auto &file : parser.files())
         ctx(file);
 
