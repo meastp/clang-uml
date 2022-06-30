@@ -1770,6 +1770,10 @@ void translation_unit_visitor::process_field(
         relationship_hint = relationship_t::kAssociation;
     if (type_name.find("std::weak_ptr") == 0)
         relationship_hint = relationship_t::kAssociation;
+    if (type_name.find("qms::clone_ptr") == 0)
+        relationship_hint = relationship_t::kComposition;
+    if (type_name.find("std::vector") == 0)
+        relationship_hint = relationship_t::kComposition;
 
     found_relationships_t relationships;
 
