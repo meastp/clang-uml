@@ -742,6 +742,12 @@ bool translation_unit_visitor::process_field_with_template_instantiation(
     else if (tr_unaliased_declaration.find("std::weak_ptr") == 0) {
         nested_relationship_hint = relationship_t::kAssociation;
     }
+    else if (tr_unaliased_declaration.find("qms::clone_ptr") == 0) {
+        nested_relationship_hint = relationship_t::kComposition;
+    }
+    else if (tr_unaliased_declaration.find("std::vector") == 0) {
+        nested_relationship_hint = relationship_t::kComposition;
+    }
 
     relationship_t relationship_type{};
     if (mv.type().kind() == cppast::cpp_type_kind::pointer_t ||
