@@ -1,0 +1,16 @@
+type: class
+title: Package diagram model
+include_relations_also_as_members: false
+generate_method_arguments: none
+glob:
+  - src/common/model/*.cc
+  - src/package_diagram/model/*.cc
+include:
+  namespaces:
+    - clanguml::common::model
+    - clanguml::package_diagram::model
+using_namespace:
+  - clanguml::package_diagram::model
+exclude:
+  relationships:
+    - dependency

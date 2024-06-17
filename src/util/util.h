@@ -1,7 +1,7 @@
 /**
- * src/util/util.h
+ * @file src/util/util.h
  *
- * Copyright (c) 2021-2022 Bartek Kryza <bkryza@gmail.com>
+ * Copyright (c) 2021-2024 Bartek Kryza <bkryza@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,58 +21,155 @@
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
+#include <cstring>
 #include <filesystem>
-#include <string.h>
 #include <string>
 #include <type_traits>
 #include <vector>
 
-namespace clanguml {
-namespace util {
-
-std::string ltrim(const std::string &s);
-std::string rtrim(const std::string &s);
-std::string trim(const std::string &s);
-
-#define __FILENAME__                                                           \
-    (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
-
 #define LOG_ERROR(fmt__, ...)                                                  \
-    spdlog::get("console")->error(std::string("[{}:{}] ") + fmt__,             \
-        __FILENAME__, __LINE__, ##__VA_ARGS__)
+    spdlog::get("clanguml-logger")                                             \
+        ->error(fmt::runtime(std::string("[{}:{}] ") + fmt__), FILENAME_,      \
+            __LINE__, ##__VA_ARGS__)
 
 #define LOG_WARN(fmt__, ...)                                                   \
-    spdlog::get("console")->warn(std::string("[{}:{}] ") + fmt__,              \
-        __FILENAME__, __LINE__, ##__VA_ARGS__)
+    spdlog::get("clanguml-logger")                                             \
+        ->warn(fmt::runtime(std::string("[{}:{}] ") + fmt__), FILENAME_,       \
+            __LINE__, ##__VA_ARGS__)
 
 #define LOG_INFO(fmt__, ...)                                                   \
-    spdlog::get("console")->info(std::string("[{}:{}] ") + fmt__,              \
-        __FILENAME__, __LINE__, ##__VA_ARGS__)
+    spdlog::get("clanguml-logger")                                             \
+        ->info(fmt::runtime(std::string("[{}:{}] ") + fmt__), FILENAME_,       \
+            __LINE__, ##__VA_ARGS__)
 
 #define LOG_DBG(fmt__, ...)                                                    \
-    spdlog::get("console")->debug(std::string("[{}:{}] ") + fmt__,             \
-        __FILENAME__, __LINE__, ##__VA_ARGS__)
+    spdlog::get("clanguml-logger")                                             \
+        ->debug(fmt::runtime(std::string("[{}:{}] ") + fmt__), FILENAME_,      \
+            __LINE__, ##__VA_ARGS__)
+
+#define LOG_TRACE(fmt__, ...)                                                  \
+    spdlog::get("clanguml-logger")                                             \
+        ->trace(fmt::runtime(std::string("[{}:{}] ") + fmt__), FILENAME_,      \
+            __LINE__, ##__VA_ARGS__)
+
+namespace clanguml::util {
+
+#define FILENAME_                                                              \
+    (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
+
+constexpr unsigned kDefaultMessageCommentWidth{25U};
 
 /**
- * @brief Setup spdlog logger.
+ * @brief Left trim a string
  *
- * @param verbose Whether the logging should be verbose or not.
+ * @param s Input string
+ * @return Left trimmed string
  */
-void setup_logging(bool verbose);
+std::string ltrim(const std::string &s);
 
+/**
+ * @brief Right trim a string
+ *
+ * @param s Input string
+ * @return Right trimmed string
+ */
+std::string rtrim(const std::string &s);
+
+/**
+ * @brief Trim a string
+ *
+ * @param s Input string
+ * @return Trimmed string
+ */
+std::string trim(const std::string &s);
+
+/**
+ * @brief Remove `typename` prefix from a string if exists
+ * @param s Input string
+ * @return String without `typename` prefix
+ */
+std::string trim_typename(const std::string &s);
+
+/**
+ * @brief Execute a shell `command` and return console output as string
+ *
+ * @param command Shell command to execute
+ * @return Console output of the command
+ */
 std::string get_process_output(const std::string &command);
 
+/**
+ * @brief Execute command shell and throw exception if command fails
+ *
+ * @param command Command to execute
+ */
+void check_process_output(const std::string &command);
+
+/**
+ * @brief Get value of an environment variable
+ *
+ * @param name Name of the environment variable
+ * @return Value of the environment variable, or empty if it doesn't exist
+ */
 std::string get_env(const std::string &name);
 
+/**
+ * @brief Check if `$PWD` is in a Git repository
+ *
+ * This can be overridden by exporting `CLANGUML_GIT_COMMIT` environment
+ * variable.
+ *
+ * @return True, if the current directory is in a Git repository
+ */
 bool is_git_repository();
 
+/**
+ * @brief Get current Git branch
+ *
+ * @return Name of the current Git branch
+ */
 std::string get_git_branch();
 
+/**
+ * @brief Get current Git revision
+ *
+ * Generates a Git revision tag using `git describe --tags --always` command
+ *
+ * @return Current repository Git revision
+ */
 std::string get_git_revision();
 
+/**
+ * @brief Get current Git commit
+ *
+ * @return Latest Git commit hash
+ */
 std::string get_git_commit();
 
+/**
+ * @brief Get path to the top level Git directory
+ *
+ * @return Absolut path to the nearest directory containing `.git` folder
+ */
 std::string get_git_toplevel_dir();
+
+/**
+ * @brief Get descriptive name of the current operating system.
+ *
+ * @return Name of the operating system
+ */
+std::string get_os_name();
+
+template <typename T, typename S>
+std::unique_ptr<T> unique_pointer_cast(std::unique_ptr<S> &&p) noexcept
+{
+    if (T *const converted = dynamic_cast<T *>(p.get())) {
+        std::move(p).release(); // NOLINT
+        return std::unique_ptr<T>{converted};
+    }
+
+    return {};
+}
 
 /**
  * @brief Split a string using delimiter
@@ -90,17 +187,50 @@ std::string get_git_toplevel_dir();
 std::vector<std::string> split(
     std::string str, std::string_view delimiter, bool skip_empty = true);
 
+std::vector<std::string> split_isspace(std::string str);
+
+/**
+ * @brief Remove and erase elements from a vector
+ *
+ * @tparam T Element type
+ * @tparam F Functor type
+ * @param v Vector to remove elements from
+ * @param f Functor to decide which elements to remove
+ */
+template <typename T, typename F> void erase_if(std::vector<T> &v, F &&f)
+{
+    v.erase(std::remove_if(v.begin(), v.end(), std::forward<F>(f)), v.end());
+}
+
+/**
+ * @brief Join `toks` into string using `delimiter` as separator
+ *
+ * @param toks Elements to join into string
+ * @param delimiter Separator to use to join elements
+ * @return Concatenated elements into one string
+ */
 std::string join(
     const std::vector<std::string> &toks, std::string_view delimiter);
 
 /**
- * @brief Remove any qualifiers (e.g. const) from type.
+ * @brief Join `args` into string using `delimiter` as separator
  *
- * @param s String spelling of the type.
- *
- * @return Unqualified type spelling.
+ * @tparam Args Element type
+ * @param delimiter Separator to use to join elements
+ * @param args Elements to join into string
+ * @return Arguments concatenated into one string
  */
-std::string unqualify(const std::string &s);
+template <typename... Args>
+std::string join(std::string_view delimiter, Args... args)
+{
+    std::vector<std::string> coll{args...};
+
+    erase_if(coll, [](const auto &s) {
+        return s.find_first_not_of(" \t") == std::string::npos;
+    });
+
+    return fmt::format("{}", fmt::join(coll, delimiter));
+}
 
 /**
  * @brief Abbreviate string to max_length, and replace last 3 characters
@@ -110,7 +240,7 @@ std::string unqualify(const std::string &s);
  * @param max_length Maximum length
  * @return Abbreviated string
  */
-std::string abbreviate(const std::string &s, const unsigned int max_length);
+std::string abbreviate(const std::string &s, unsigned int max_length);
 
 /**
  * @brief Find element alias in Puml note
@@ -132,8 +262,8 @@ bool find_element_alias(
  *
  * @return True if at least on replacement was made
  */
-bool replace_all(
-    std::string &input, std::string pattern, std::string replace_with);
+bool replace_all(std::string &input, const std::string &pattern,
+    const std::string &replace_with);
 
 /**
  * @brief Appends a vector to a vector.
@@ -169,6 +299,10 @@ bool starts_with(
     const std::filesystem::path &path, const std::filesystem::path &prefix);
 
 template <> bool starts_with(const std::string &s, const std::string &prefix);
+
+template <typename T> bool ends_with(const T &value, const T &suffix);
+
+template <> bool ends_with(const std::string &value, const std::string &suffix);
 
 template <typename T>
 bool ends_with(const std::vector<T> &col, const std::vector<T> &suffix)
@@ -239,5 +373,91 @@ void for_each_if(const T &collection, C &&cond, F &&func)
         });
 }
 
-} // namespace util
-} // namespace clanguml
+template <typename R, typename T, typename F>
+std::vector<R> map(const std::vector<T> &in, F &&f)
+{
+    std::vector<R> out;
+    std::transform(
+        in.cbegin(), in.cend(), std::back_inserter(out), std::forward<F>(f));
+    return out;
+}
+
+template <typename T, typename F, typename FElse>
+void if_not_null(const T *pointer, F &&func, FElse &&func_else)
+{
+    if (pointer != nullptr) {
+        std::forward<F>(func)(pointer);
+    }
+    else {
+        std::forward<FElse>(func_else)();
+    }
+}
+
+template <typename T, typename F> void if_not_null(const T *pointer, F &&func)
+{
+    if_not_null(pointer, std::forward<F>(func), []() {});
+}
+
+template <typename F, typename FElse>
+void _if(const bool condition, F &&func, FElse &&func_else)
+{
+    if (condition) {
+        std::forward<F>(func)();
+    }
+    else {
+        std::forward<FElse>(func_else)();
+    }
+}
+
+template <typename F> void _if(const bool condition, F &&func)
+{
+    _if(condition, std::forward<F>(func), []() {});
+}
+
+/**
+ * @brief Generate a hash seed.
+ *
+ * @param seed Initial seed.
+ * @return Hash seed.
+ */
+std::size_t hash_seed(std::size_t seed);
+
+/**
+ * @brief Convert filesystem path to url path
+ *
+ * The purpose of this function is to make sure that a path can
+ * be used in a URL, e.g. it's separators are POSIX-style.
+ *
+ * @param p Path to convert
+ * @return String representation of the path in URL format
+ */
+std::string path_to_url(const std::filesystem::path &p);
+
+/**
+ * @brief Ensure path is absolute.
+ *
+ * If path is absolute, return the p. If path is not absolute, make it
+ * absolute with respect to root directory.
+ *
+ * @param p Path to modify
+ * @param root Root against which the path should be made absolute
+ * @return Absolute path
+ */
+std::filesystem::path ensure_path_is_absolute(const std::filesystem::path &p,
+    const std::filesystem::path &root = std::filesystem::current_path());
+
+/**
+ * @brief Check if a given path is relative to another path.
+ *
+ * @param parent The path to be checked for relativity.
+ * @param right The base path against which the relativity is checked.
+ * @return True if the child path is relative to the parent path, false
+ * otherwise.
+ */
+bool is_relative_to(
+    const std::filesystem::path &parent, const std::filesystem::path &child);
+
+std::string format_message_comment(
+    const std::string &c, unsigned width = kDefaultMessageCommentWidth);
+
+} // namespace clanguml::util

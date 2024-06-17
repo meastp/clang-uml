@@ -1,34 +1,58 @@
 name: build
 
-on: [push, pull_request]
+on:
+  push:
+    paths-ignore:
+      - 'docs/**'
+      - 'packaging/**'
+      - 'util/**'
+      - 'uml/**'
+      - '**.md'
+    branches-ignore:
+      - 'noactions/*'
+  pull_request:
+    paths-ignore:
+      - 'docs/**'
+      - 'packaging/**'
+      - 'util/**'
+      - 'uml/**'
+      - '**.md'
+      - '**.svg'
+      - '**.png'
+    branches-ignore:
+      - 'noactions/*'
 
 jobs:
   build-ubuntu:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
-      with:
-        submodules: recursive
+      uses: actions/checkout@v4
     - name: Update package database
       run: sudo apt -y update
     - name: Install deps
-      run: sudo apt -y install git make gcc-10 g++-10 ccache cmake libyaml-cpp-dev clang-12 libclang-12-dev libclang-cpp12-dev lcov
+      run: sudo apt -y install git make pkg-config gcc-11 g++-11 ccache cmake libyaml-cpp-dev llvm-15 clang-15 libclang-15-dev libclang-cpp15-dev clang-format-15 lcov zlib1g-dev libunwind-dev libdw-dev
     - name: Select g++ version
       run: |
-        sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 10
-        sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-10 10
+        sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-11 11
+        sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-11 11
+    - name: Check code formatting
+      run: |
+        make check-formatting
     - name: Build and unit test
       run: |
-        NUMPROC=2 CMAKE_CXX_FLAGS="--coverage -fno-inline" CMAKE_EXE_LINKER_FLAGS="-lgcov --coverage" make test
+        NUMPROC=2 CODE_COVERAGE=ON LLVM_VERSION=15 make test
     - name: Run coverage
       run: |
         lcov -c -d debug -o coverage.info
-        lcov -e coverage.info "$PWD/src/*" -o coverage-src.info
+        lcov -r coverage.info -o coverage-src.info "$PWD/src/main.cc" "$PWD/src/common/generators/generators.cc"
+        lcov -e coverage-src.info -o coverage-src.info "$PWD/src/*"
         lcov -l coverage-src.info
     - name: Upload coverage
-      uses: codecov/codecov-action@v2
+      uses: codecov/codecov-action@v3
       with:
         files: coverage-src.info
+        disable_search: true
         name: clang-uml
-        fail_ci_if_error: true
+        token: ${{ secrets.CODECOV_TOKEN }}
+        fail_ci_if_error: false

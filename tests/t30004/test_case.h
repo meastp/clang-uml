@@ -1,7 +1,7 @@
 /**
- * tests/t30004/test_case.cc
+ * tests/t30004/test_case.h
  *
- * Copyright (c) 2021-2022 Bartek Kryza <bkryza@gmail.com>
+ * Copyright (c) 2021-2024 Bartek Kryza <bkryza@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,30 +16,20 @@
  * limitations under the License.
  */
 
-TEST_CASE("t30004", "[test-case][package]")
+TEST_CASE("t30004")
 {
-    auto [config, db] = load_config("t30004");
+    using namespace clanguml::test;
+    using namespace std::string_literals;
 
-    auto diagram = config.diagrams["t30004_package"];
+    auto [config, db, diagram, model] =
+        CHECK_PACKAGE_MODEL("t30004", "t30004_package");
 
-    REQUIRE(diagram->name == "t30004_package");
-
-    auto model = generate_package_diagram(db, diagram);
-
-    REQUIRE(model->name() == "t30004_package");
-
-    auto puml = generate_package_puml(diagram, *model);
-    AliasMatcher _A(puml);
-
-    REQUIRE_THAT(puml, StartsWith("@startuml"));
-    REQUIRE_THAT(puml, EndsWith("@enduml\n"));
-
-    REQUIRE_THAT(puml, IsPackage("AAA"));
-    REQUIRE_THAT(puml, IsPackage("BBB"));
-    REQUIRE_THAT(puml, IsPackage("CCC"));
-    REQUIRE_THAT(puml, !IsPackage("DDD"));
-    REQUIRE_THAT(puml, IsPackage("EEE"));
-
-    save_puml(
-        "./" + config.output_directory() + "/" + diagram->name + ".puml", puml);
+    CHECK_PACKAGE_DIAGRAM(*config, diagram, *model, [](const auto &src) {
+        REQUIRE(IsNamespacePackage(src, "A"s));
+        REQUIRE(IsNamespacePackage(src, "A"s, "AAA"s));
+        REQUIRE(IsNamespacePackage(src, "A"s, "BBB"s));
+        REQUIRE(IsNamespacePackage(src, "A"s, "CCC"s));
+        REQUIRE(!IsNamespacePackage(src, "A"s, "DDD"s));
+        REQUIRE(IsNamespacePackage(src, "A"s, "EEE"s));
+    });
 }

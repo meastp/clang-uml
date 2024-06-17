@@ -1,7 +1,7 @@
 /**
- * src/common/model/element.cc
+ * @file src/common/model/element.cc
  *
- * Copyright (c) 2021-2022 Bartek Kryza <bkryza@gmail.com>
+ * Copyright (c) 2021-2024 Bartek Kryza <bkryza@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,30 +21,25 @@
 #include "util/util.h"
 
 #include <ostream>
+#include <utility>
 
 namespace clanguml::common::model {
 
-element::element(const namespace_ &using_namespace)
-    : using_namespace_{using_namespace}
+element::element(namespace_ using_namespace, path_type pt)
+    : ns_{pt}
+    , using_namespace_{std::move(using_namespace)}
 {
-}
-
-void element::set_using_namespaces(const namespace_ &un)
-{
-    using_namespace_ = un;
 }
 
 const namespace_ &element::using_namespace() const { return using_namespace_; }
 
 inja::json element::context() const
 {
-    inja::json ctx;
-    ctx["name"] = name();
-    ctx["alias"] = alias();
-    ctx["full_name"] = full_name(false);
+    inja::json ctx = diagram_element::context();
     ctx["namespace"] = get_namespace().to_string();
-    if (comment().has_value())
-        ctx["comment"] = comment().value();
+    if (const auto maybe_comment = comment(); maybe_comment.has_value()) {
+        ctx["comment"] = maybe_comment.value();
+    }
 
     return ctx;
 }
@@ -62,4 +57,4 @@ std::ostream &operator<<(std::ostream &out, const element &rhs)
     return out;
 }
 
-}
+} // namespace clanguml::common::model

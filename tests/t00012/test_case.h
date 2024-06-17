@@ -1,7 +1,7 @@
 /**
- * tests/t00012/test_case.cc
+ * tests/t00012/test_case.h
  *
- * Copyright (c) 2021-2022 Bartek Kryza <bkryza@gmail.com>
+ * Copyright (c) 2021-2024 Bartek Kryza <bkryza@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,33 +16,22 @@
  * limitations under the License.
  */
 
-TEST_CASE("t00012", "[test-case][class]")
+TEST_CASE("t00012")
 {
-    auto [config, db] = load_config("t00012");
+    using namespace clanguml::test;
 
-    auto diagram = config.diagrams["t00012_class"];
+    auto [config, db, diagram, model] =
+        CHECK_CLASS_MODEL("t00012", "t00012_class");
 
-    REQUIRE(diagram->name == "t00012_class");
+    CHECK_CLASS_DIAGRAM(*config, diagram, *model, [](const auto &src) {
+        REQUIRE(IsClassTemplate(src, "A<T,Ts...>"));
+        REQUIRE(IsClassTemplate(src, "B<int... Is>"));
 
-    auto model = generate_class_diagram(db, diagram);
-
-    REQUIRE(model->name() == "t00012_class");
-
-    auto puml = generate_class_puml(diagram, *model);
-    AliasMatcher _A(puml);
-
-    REQUIRE_THAT(puml, StartsWith("@startuml"));
-    REQUIRE_THAT(puml, EndsWith("@enduml\n"));
-    REQUIRE_THAT(puml, IsClassTemplate("A", "T,Ts..."));
-    REQUIRE_THAT(puml, IsClassTemplate("B", "int Is..."));
-
-    REQUIRE_THAT(puml, IsInstantiation(_A("B<int Is...>"), _A("B<3,2,1>")));
-    REQUIRE_THAT(puml, IsInstantiation(_A("B<int Is...>"), _A("B<1,1,1,1>")));
-    REQUIRE_THAT(puml,
-        IsInstantiation(_A("C<T,int Is...>"),
-            _A("C<std::map<int,"
-               "std::vector<std::vector<std::vector<std::string>>>>,3,3,3>")));
-
-    save_puml(
-        "./" + config.output_directory() + "/" + diagram->name + ".puml", puml);
+        REQUIRE(IsInstantiation(src, "B<int... Is>", "B<3,2,1>"));
+        REQUIRE(IsInstantiation(src, "B<int... Is>", "B<1,1,1,1>"));
+        REQUIRE(IsInstantiation(src, "C<T,int... Is>",
+            "C<std::map<int,"
+            "std::vector<std::vector<std::vector<std::string>>>>,3,3,"
+            "3>"));
+    });
 }

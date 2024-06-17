@@ -1,7 +1,7 @@
 /**
- * src/include_diagram/generators/plantuml/include_diagram_generator.h
+ * @file src/include_diagram/generators/plantuml/include_diagram_generator.h
  *
- * Copyright (c) 2021-2022 Bartek Kryza <bkryza@gmail.com>
+ * Copyright (c) 2021-2024 Bartek Kryza <bkryza@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,18 +26,12 @@
 #include "include_diagram/visitor/translation_unit_visitor.h"
 #include "util/util.h"
 
-#include <cppast/cpp_entity_index.hpp>
-#include <cppast/libclang_parser.hpp>
-
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <sstream>
 
-namespace clanguml {
-namespace include_diagram {
-namespace generators {
-namespace plantuml {
+namespace clanguml::include_diagram::generators::plantuml {
 
 using diagram_config = clanguml::config::include_diagram;
 using diagram_model = clanguml::include_diagram::model::diagram;
@@ -52,18 +46,40 @@ using clanguml::common::model::relationship_t;
 using clanguml::common::model::source_file;
 using namespace clanguml::util;
 
+/**
+ * @brief Include diagram PlantUML generator
+ */
 class generator : public common_generator<diagram_config, diagram_model> {
 public:
     generator(diagram_config &config, diagram_model &model);
 
+    using common_generator<diagram_config, diagram_model>::generate;
+
+    /**
+     * @brief Main generator method.
+     *
+     * This method is called first and coordinates the entire diagram
+     * generation.
+     *
+     * @param ostr Output stream.
+     */
+    void generate_diagram(std::ostream &ostr) const override;
+
+    /**
+     * @brief Generate relationships originating from source_file `f`
+     *
+     * @param p Diagram element
+     * @param parent Output stream
+     */
     void generate_relationships(const source_file &p, std::ostream &ostr) const;
 
+    /**
+     * @brief Generate diagram element
+     *
+     * @param e Source file diagram element
+     * @param parent Output stream
+     */
     void generate(const source_file &e, std::ostream &ostr) const;
-
-    void generate(std::ostream &ostr) const;
 };
 
-}
-}
-}
-}
+} // namespace clanguml::include_diagram::generators::plantuml

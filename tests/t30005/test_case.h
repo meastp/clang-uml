@@ -1,7 +1,7 @@
 /**
- * tests/t30005/test_case.cc
+ * tests/t30005/test_case.h
  *
- * Copyright (c) 2021-2022 Bartek Kryza <bkryza@gmail.com>
+ * Copyright (c) 2021-2024 Bartek Kryza <bkryza@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,31 +16,26 @@
  * limitations under the License.
  */
 
-TEST_CASE("t30005", "[test-case][package]")
+TEST_CASE("t30005")
 {
-    auto [config, db] = load_config("t30005");
+    using namespace clanguml::test;
+    using namespace std::string_literals;
 
-    auto diagram = config.diagrams["t30005_package"];
+    auto [config, db, diagram, model] =
+        CHECK_PACKAGE_MODEL("t30005", "t30005_package");
 
-    REQUIRE(diagram->name == "t30005_package");
+    CHECK_PACKAGE_DIAGRAM(*config, diagram, *model, [](const auto &src) {
+        REQUIRE(IsNamespacePackage(src, "A"s));
+        REQUIRE(IsNamespacePackage(src, "A"s, "AA"s));
+        REQUIRE(IsNamespacePackage(src, "A"s, "AA"s, "AAA"s));
+        REQUIRE(IsNamespacePackage(src, "B"s));
+        REQUIRE(IsNamespacePackage(src, "B"s, "BB"s));
+        REQUIRE(IsNamespacePackage(src, "B"s, "BB"s, "BBB"s));
+        REQUIRE(IsNamespacePackage(src, "C"s));
+        REQUIRE(IsNamespacePackage(src, "C"s, "CC"s));
+        REQUIRE(IsNamespacePackage(src, "C"s, "CC"s, "CCC"s));
 
-    auto model = generate_package_diagram(db, diagram);
-
-    REQUIRE(model->name() == "t30005_package");
-
-    auto puml = generate_package_puml(diagram, *model);
-    AliasMatcher _A(puml);
-
-    REQUIRE_THAT(puml, StartsWith("@startuml"));
-    REQUIRE_THAT(puml, EndsWith("@enduml\n"));
-
-    REQUIRE_THAT(puml, IsPackage("AAA"));
-    REQUIRE_THAT(puml, IsPackage("BBB"));
-    REQUIRE_THAT(puml, IsPackage("CCC"));
-
-    REQUIRE_THAT(puml, IsDependency(_A("BBB"), _A("AAA")));
-    REQUIRE_THAT(puml, IsDependency(_A("CCC"), _A("AAA")));
-
-    save_puml(
-        "./" + config.output_directory() + "/" + diagram->name + ".puml", puml);
+        REQUIRE(IsDependency(src, "BBB", "AAA"));
+        REQUIRE(IsDependency(src, "CCC", "AAA"));
+    });
 }

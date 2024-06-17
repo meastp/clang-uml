@@ -1,7 +1,7 @@
 /**
- * tests/t00006/test_case.cc
+ * tests/t00006/test_case.h
  *
- * Copyright (c) 2021-2022 Bartek Kryza <bkryza@gmail.com>
+ * Copyright (c) 2021-2024 Bartek Kryza <bkryza@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,66 +16,49 @@
  * limitations under the License.
  */
 
-TEST_CASE("t00006", "[test-case][class]")
+TEST_CASE("t00006")
 {
-    auto [config, db] = load_config("t00006");
+    using namespace clanguml::test;
 
-    auto diagram = config.diagrams["t00006_class"];
+    auto [config, db, diagram, model] =
+        CHECK_CLASS_MODEL("t00006", "t00006_class");
 
-    REQUIRE(diagram->name == "t00006_class");
+    CHECK_CLASS_DIAGRAM(*config, diagram, *model, [](const auto &src) {
+        REQUIRE(IsClass(src, "A"));
+        REQUIRE(IsClass(src, "B"));
+        REQUIRE(IsClass(src, "C"));
+        REQUIRE(IsClass(src, "D"));
+        REQUIRE(IsClass(src, "E"));
+        REQUIRE(IsClass(src, "F"));
+        REQUIRE(IsClass(src, "G"));
+        REQUIRE(IsClass(src, "H"));
+        REQUIRE(IsClass(src, "I"));
+        REQUIRE(IsClass(src, "J"));
+        REQUIRE(IsClass(src, "K"));
+        REQUIRE(IsClass(src, "L"));
+        REQUIRE(IsClass(src, "M"));
+        REQUIRE(IsClass(src, "N"));
+        REQUIRE(IsClass(src, "NN"));
+        REQUIRE(IsClass(src, "NNN"));
 
-    auto model = generate_class_diagram(db, diagram);
+        REQUIRE(
+            IsInstantiation(src, "custom_container<T>", "custom_container<E>"));
 
-    REQUIRE(model->name() == "t00006_class");
-
-    REQUIRE(model->should_include("clanguml::t00006::A"));
-    REQUIRE(model->should_include("clanguml::t00006::B"));
-    REQUIRE(model->should_include("clanguml::t00006::C"));
-    REQUIRE(model->should_include("clanguml::t00006::D"));
-    REQUIRE(model->should_include("clanguml::t00006::E"));
-
-    auto puml = generate_class_puml(diagram, *model);
-    AliasMatcher _A(puml);
-
-    REQUIRE_THAT(puml, StartsWith("@startuml"));
-    REQUIRE_THAT(puml, EndsWith("@enduml\n"));
-    REQUIRE_THAT(puml, IsClass(_A("A")));
-    REQUIRE_THAT(puml, IsClass(_A("B")));
-    REQUIRE_THAT(puml, IsClass(_A("C")));
-    REQUIRE_THAT(puml, IsClass(_A("D")));
-    REQUIRE_THAT(puml, IsClass(_A("E")));
-    REQUIRE_THAT(puml, IsClass(_A("F")));
-    REQUIRE_THAT(puml, IsClass(_A("G")));
-    REQUIRE_THAT(puml, IsClass(_A("H")));
-    REQUIRE_THAT(puml, IsClass(_A("I")));
-    REQUIRE_THAT(puml, IsClass(_A("J")));
-    REQUIRE_THAT(puml, IsClass(_A("K")));
-    REQUIRE_THAT(puml, IsClass(_A("L")));
-    REQUIRE_THAT(puml, IsClass(_A("M")));
-    REQUIRE_THAT(puml, IsClass(_A("N")));
-    REQUIRE_THAT(puml, IsClass(_A("NN")));
-    REQUIRE_THAT(puml, IsClass(_A("NNN")));
-
-    REQUIRE_THAT(puml,
-        IsInstantiation(_A("custom_container<T>"), _A("custom_container<E>")));
-
-    REQUIRE_THAT(puml, IsAggregation(_A("R"), _A("A"), "+a"));
-    REQUIRE_THAT(puml, IsAssociation(_A("R"), _A("B"), "+b"));
-    REQUIRE_THAT(puml, IsAggregation(_A("R"), _A("C"), "+c"));
-    REQUIRE_THAT(puml, IsAssociation(_A("R"), _A("D"), "+d"));
-    REQUIRE_THAT(puml, IsAggregation(_A("R"), _A("custom_container<E>"), "+e"));
-    REQUIRE_THAT(puml, IsAggregation(_A("R"), _A("F"), "+f"));
-    REQUIRE_THAT(puml, IsAssociation(_A("R"), _A("G"), "+g"));
-    REQUIRE_THAT(puml, IsAggregation(_A("R"), _A("H"), "+h"));
-    REQUIRE_THAT(puml, IsAssociation(_A("R"), _A("I"), "+i"));
-    REQUIRE_THAT(puml, IsAggregation(_A("R"), _A("J"), "+j"));
-    REQUIRE_THAT(puml, IsAssociation(_A("R"), _A("K"), "+k"));
-    REQUIRE_THAT(puml, IsAggregation(_A("R"), _A("L"), "+lm"));
-    REQUIRE_THAT(puml, IsAggregation(_A("R"), _A("M"), "+lm"));
-    REQUIRE_THAT(puml, IsAggregation(_A("R"), _A("N"), "+ns"));
-    REQUIRE_THAT(puml, IsAggregation(_A("R"), _A("NN"), "+ns"));
-    REQUIRE_THAT(puml, IsAggregation(_A("R"), _A("NNN"), "+ns"));
-
-    save_puml(
-        "./" + config.output_directory() + "/" + diagram->name + ".puml", puml);
+        REQUIRE(IsAggregation<Public>(src, "R", "A", "a"));
+        REQUIRE(IsAssociation<Public>(src, "R", "B", "b"));
+        REQUIRE(IsAggregation<Public>(src, "R", "C", "c"));
+        REQUIRE(IsAssociation<Public>(src, "R", "D", "d"));
+        REQUIRE(IsAggregation<Public>(src, "R", "custom_container<E>", "e"));
+        REQUIRE(IsAggregation<Public>(src, "R", "F", "f"));
+        REQUIRE(IsAssociation<Public>(src, "R", "G", "g"));
+        REQUIRE(IsAggregation<Public>(src, "R", "H", "h"));
+        REQUIRE(IsAssociation<Public>(src, "R", "I", "i"));
+        REQUIRE(IsAggregation<Public>(src, "R", "J", "j", "", "10"));
+        REQUIRE(IsAssociation<Public>(src, "R", "K", "k", "", "20"));
+        REQUIRE(IsAggregation<Public>(src, "R", "L", "lm"));
+        REQUIRE(IsAggregation<Public>(src, "R", "M", "lm"));
+        REQUIRE(IsAggregation<Public>(src, "R", "N", "ns"));
+        REQUIRE(IsAggregation<Public>(src, "R", "NN", "ns"));
+        REQUIRE(IsAggregation<Public>(src, "R", "NNN", "ns"));
+    });
 }

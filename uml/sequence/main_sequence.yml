@@ -1,0 +1,27 @@
+type: sequence
+title: main() function sequence diagram
+# Group free functions into one participant per file
+combine_free_functions_into_file_participants: true
+# Do not generate method or function arguments
+generate_method_arguments: none
+generate_condition_statements: true
+generate_message_comments: true
+# Parse only 1 translation unit for this diagram
+glob:
+  - src/main.cc
+include:
+  # Only include entities and call expressions from the project directory
+  paths:
+    - src
+exclude:
+  # Exclude calls to config options
+  elements:
+    - clanguml::config::option<std::string>
+  # Exclude entities and call expressions from irrelevant files
+  paths:
+    - src/util/util.h
+using_namespace:
+  - clanguml
+# Use clang-uml main function as entry point for this diagram
+from:
+  - function: main(int,const char **)

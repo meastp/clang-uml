@@ -1,7 +1,7 @@
 /**
- * tests/t00035/test_case.cc
+ * tests/t00035/test_case.h
  *
- * Copyright (c) 2021-2022 Bartek Kryza <bkryza@gmail.com>
+ * Copyright (c) 2021-2024 Bartek Kryza <bkryza@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,36 +16,23 @@
  * limitations under the License.
  */
 
-TEST_CASE("t00035", "[test-case][class]")
+TEST_CASE("t00035")
 {
-    auto [config, db] = load_config("t00035");
+    using namespace clanguml::test;
 
-    auto diagram = config.diagrams["t00035_class"];
+    auto [config, db, diagram, model] =
+        CHECK_CLASS_MODEL("t00035", "t00035_class");
 
-    REQUIRE(diagram->name == "t00035_class");
+    CHECK_CLASS_DIAGRAM(*config, diagram, *model, [](const auto &src) {
+        REQUIRE(IsClass(src, "Top"));
+        REQUIRE(IsClass(src, "Bottom"));
+        REQUIRE(IsClass(src, "Center"));
+        REQUIRE(IsClass(src, "Left"));
+        REQUIRE(IsClass(src, "Right"));
 
-    auto model = generate_class_diagram(db, diagram);
-
-    REQUIRE(model->name() == "t00035_class");
-    REQUIRE(model->should_include("clanguml::t00035::A"));
-
-    auto puml = generate_class_puml(diagram, *model);
-    AliasMatcher _A(puml);
-
-    REQUIRE_THAT(puml, StartsWith("@startuml"));
-    REQUIRE_THAT(puml, EndsWith("@enduml\n"));
-
-    REQUIRE_THAT(puml, IsClass(_A("Top")));
-    REQUIRE_THAT(puml, IsClass(_A("Bottom")));
-    REQUIRE_THAT(puml, IsClass(_A("Center")));
-    REQUIRE_THAT(puml, IsClass(_A("Left")));
-    REQUIRE_THAT(puml, IsClass(_A("Right")));
-
-    REQUIRE_THAT(puml, IsLayoutHint(_A("Center"), "up", _A("Top")));
-    REQUIRE_THAT(puml, IsLayoutHint(_A("Center"), "left", _A("Left")));
-    REQUIRE_THAT(puml, IsLayoutHint(_A("Center"), "right", _A("Right")));
-    REQUIRE_THAT(puml, IsLayoutHint(_A("Center"), "down", _A("Bottom")));
-
-    save_puml(
-        "./" + config.output_directory() + "/" + diagram->name + ".puml", puml);
+        REQUIRE(IsLayoutHint(src, "Center", "up", "Top"));
+        REQUIRE(IsLayoutHint(src, "Center", "left", "Left"));
+        REQUIRE(IsLayoutHint(src, "Center", "right", "Right"));
+        REQUIRE(IsLayoutHint(src, "Center", "down", "Bottom"));
+    });
 }

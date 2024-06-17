@@ -1,6 +1,5 @@
 namespace external {
-class C {
-};
+class C { };
 }
 
 namespace clanguml {
@@ -13,7 +12,7 @@ template <typename T> class D {
 };
 
 class A {
-private:
+public:
     void foo() { }
     friend class B;
     friend class external::C;
@@ -29,5 +28,5 @@ public:
     void foo() { m_a->foo(); }
     A *m_a;
 };
-}
-}
+} // namespace t00011
+} // namespace clanguml

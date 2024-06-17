@@ -5,8 +5,7 @@ namespace clanguml {
 namespace t00031 {
 
 /// @uml{style[#back:lightgreen|yellow;header:blue/red]}
-class A {
-};
+class A { };
 
 /// @uml{style[#line.dotted:blue]}
 enum B { one, two, three };
@@ -16,8 +15,7 @@ template <typename T> class C {
     T ttt;
 };
 
-class D {
-};
+class D { };
 
 struct R {
     /// @uml{style[#red,dashed,thickness=2]}
@@ -26,6 +24,8 @@ struct R {
     /// @uml{composition}
     /// @uml{style[#green,dashed,thickness=4]}
     std::vector<B> bbb;
+
+    void add_b(B b) { bbb.push_back(b); }
 
     /// @uml{style[#blue,dotted,thickness=8]}
     C<int> ccc;

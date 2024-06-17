@@ -1,0 +1,17 @@
+diagrams:
+  t20031_sequence:
+    type: sequence
+    glob:
+      - t20031.cc
+    include:
+      namespaces:
+        - clanguml::t20031
+    exclude:
+      callee_types:
+        - constructor
+        - operator
+        - lambda
+    using_namespace: clanguml::t20031
+    from:
+      - function: "clanguml::t20031::tmain(int)"
+      - function: "clanguml::t20031::tmain(bool,int)"

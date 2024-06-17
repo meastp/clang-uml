@@ -1,7 +1,7 @@
 /**
- * tests/t00015/test_case.cc
+ * tests/t00015/test_case.h
  *
- * Copyright (c) 2021-2022 Bartek Kryza <bkryza@gmail.com>
+ * Copyright (c) 2021-2024 Bartek Kryza <bkryza@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,30 +16,18 @@
  * limitations under the License.
  */
 
-TEST_CASE("t00015", "[test-case][class]")
+TEST_CASE("t00015")
 {
-    auto [config, db] = load_config("t00015");
+    using namespace clanguml::test;
 
-    auto diagram = config.diagrams["t00015_class"];
+    auto [config, db, diagram, model] =
+        CHECK_CLASS_MODEL("t00015", "t00015_class");
 
-    REQUIRE(diagram->name == "t00015_class");
-
-    auto model = generate_class_diagram(db, diagram);
-
-    REQUIRE(model->name() == "t00015_class");
-    REQUIRE(model->should_include("clanguml::t00015::ns1::ns2::A"));
-
-    auto puml = generate_class_puml(diagram, *model);
-    AliasMatcher _A(puml);
-
-    REQUIRE_THAT(puml, StartsWith("@startuml"));
-    REQUIRE_THAT(puml, EndsWith("@enduml\n"));
-    REQUIRE_THAT(puml, IsClass(_A("ns1::A")));
-    REQUIRE_THAT(puml, IsClass(_A("ns1::ns2_v0_9_0::A")));
-    REQUIRE_THAT(puml, IsClass(_A("ns1::Anon")));
-    REQUIRE_THAT(puml, IsClass(_A("ns3::ns1::ns2::Anon")));
-    REQUIRE_THAT(puml, IsClass(_A("ns3::B")));
-
-    save_puml(
-        "./" + config.output_directory() + "/" + diagram->name + ".puml", puml);
+    CHECK_CLASS_DIAGRAM(*config, diagram, *model, [](const auto &src) {
+        REQUIRE(IsClass(src, "ns1::A"));
+        REQUIRE(IsClass(src, "ns1::ns2_v0_9_0::A"));
+        REQUIRE(IsClass(src, "ns1::Anon"));
+        REQUIRE(IsClass(src, "ns3::ns1::ns2::Anon"));
+        REQUIRE(IsClass(src, "ns3::B"));
+    });
 }

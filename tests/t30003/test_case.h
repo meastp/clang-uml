@@ -1,7 +1,7 @@
 /**
- * tests/t30003/test_case.cc
+ * tests/t30003/test_case.h
  *
- * Copyright (c) 2021-2022 Bartek Kryza <bkryza@gmail.com>
+ * Copyright (c) 2021-2024 Bartek Kryza <bkryza@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,33 +16,23 @@
  * limitations under the License.
  */
 
-TEST_CASE("t30003", "[test-case][package]")
+TEST_CASE("t30003")
 {
-    auto [config, db] = load_config("t30003");
+    using namespace clanguml::test;
+    using namespace std::string_literals;
 
-    auto diagram = config.diagrams["t30003_package"];
+    auto [config, db, diagram, model] =
+        CHECK_PACKAGE_MODEL("t30003", "t30003_package");
 
-    REQUIRE(diagram->name == "t30003_package");
+    CHECK_PACKAGE_DIAGRAM(*config, diagram, *model, [](const auto &src) {
+        REQUIRE(IsNamespacePackage(src, "ns1"s));
+        REQUIRE(IsNamespacePackage(src, "ns1"s, "ns2_v1_0_0"s));
+        REQUIRE(IsNamespacePackage(src, "ns1"s, "ns2_v0_9_0"s));
+        REQUIRE(IsNamespacePackage(src, "ns3"s));
+        REQUIRE(IsNamespacePackage(src, "ns3"s, "ns1"s));
+        REQUIRE(IsNamespacePackage(src, "ns3"s, "ns1"s, "ns2"s));
 
-    auto model = generate_package_diagram(db, diagram);
-
-    REQUIRE(model->name() == "t30003_package");
-
-    auto puml = generate_package_puml(diagram, *model);
-    AliasMatcher _A(puml);
-
-    REQUIRE_THAT(puml, StartsWith("@startuml"));
-    REQUIRE_THAT(puml, EndsWith("@enduml\n"));
-
-    REQUIRE_THAT(puml, IsPackage("ns1"));
-    REQUIRE_THAT(puml, IsPackage("ns2"));
-    REQUIRE_THAT(puml, IsPackage("ns3"));
-    REQUIRE_THAT(puml, IsPackage("ns2_v1_0_0"));
-    REQUIRE_THAT(puml, IsPackage("ns2_v0_9_0"));
-
-    REQUIRE_THAT(puml, IsDeprecated(_A("ns2_v0_9_0")));
-    REQUIRE_THAT(puml, IsDeprecated(_A("ns3")));
-
-    save_puml(
-        "./" + config.output_directory() + "/" + diagram->name + ".puml", puml);
+        REQUIRE(IsDeprecated(src, "ns2_v0_9_0"));
+        REQUIRE(IsDeprecated(src, "ns3"));
+    });
 }

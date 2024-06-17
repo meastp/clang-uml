@@ -1,7 +1,7 @@
 /**
- * tests/t00007/test_case.cc
+ * tests/t00007/test_case.h
  *
- * Copyright (c) 2021-2022 Bartek Kryza <bkryza@gmail.com>
+ * Copyright (c) 2021-2024 Bartek Kryza <bkryza@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,32 +16,21 @@
  * limitations under the License.
  */
 
-TEST_CASE("t00007", "[test-case][class]")
+TEST_CASE("t00007")
 {
-    auto [config, db] = load_config("t00007");
+    using namespace clanguml::test;
 
-    auto diagram = config.diagrams["t00007_class"];
+    auto [config, db, diagram, model] =
+        CHECK_CLASS_MODEL("t00007", "t00007_class");
 
-    REQUIRE(diagram->name == "t00007_class");
+    CHECK_CLASS_DIAGRAM(*config, diagram, *model, [](const auto &src) {
+        REQUIRE(IsClass(src, "A"));
+        REQUIRE(IsClass(src, "B"));
+        REQUIRE(IsClass(src, "C"));
+        REQUIRE(IsClass(src, "R"));
 
-    auto model = generate_class_diagram(db, diagram);
-
-    REQUIRE(model->name() == "t00007_class");
-
-    auto puml = generate_class_puml(diagram, *model);
-    AliasMatcher _A(puml);
-
-    REQUIRE_THAT(puml, StartsWith("@startuml"));
-    REQUIRE_THAT(puml, EndsWith("@enduml\n"));
-    REQUIRE_THAT(puml, IsClass(_A("A")));
-    REQUIRE_THAT(puml, IsClass(_A("B")));
-    REQUIRE_THAT(puml, IsClass(_A("C")));
-    REQUIRE_THAT(puml, IsClass(_A("R")));
-
-    REQUIRE_THAT(puml, IsAggregation(_A("R"), _A("A"), "+a"));
-    REQUIRE_THAT(puml, IsAssociation(_A("R"), _A("B"), "+b"));
-    REQUIRE_THAT(puml, IsAssociation(_A("R"), _A("C"), "+c"));
-
-    save_puml(
-        "./" + config.output_directory() + "/" + diagram->name + ".puml", puml);
+        REQUIRE(IsAggregation<Public>(src, "R", "A", "a"));
+        REQUIRE(IsAssociation<Public>(src, "R", "B", "b"));
+        REQUIRE(IsAssociation<Public>(src, "R", "C", "c"));
+    });
 }

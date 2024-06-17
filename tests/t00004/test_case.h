@@ -1,7 +1,7 @@
 /**
- * tests/t00004/test_case.cc
+ * tests/t00004/test_case.h
  *
- * Copyright (c) 2021-2022 Bartek Kryza <bkryza@gmail.com>
+ * Copyright (c) 2021-2024 Bartek Kryza <bkryza@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,40 +16,47 @@
  * limitations under the License.
  */
 
-TEST_CASE("t00004", "[test-case][class]")
+TEST_CASE("t00004")
 {
-    auto [config, db] = load_config("t00004");
+    using namespace clanguml::test;
 
-    auto diagram = config.diagrams["t00004_class"];
-
-    REQUIRE(diagram->name == "t00004_class");
+    auto [config, db, diagram, model] =
+        CHECK_CLASS_MODEL("t00004", "t00004_class");
 
     REQUIRE(diagram->include().namespaces.size() == 1);
     REQUIRE(diagram->exclude().namespaces.size() == 0);
 
-    auto model = generate_class_diagram(db, diagram);
+    CHECK_CLASS_DIAGRAM(*config, diagram, *model, [](const auto &src) {
+        REQUIRE(IsClass(src, "A"));
+        REQUIRE(IsClass(src, "A::AA"));
+        REQUIRE(IsClass(src, "A::AA::AAA"));
+        REQUIRE(IsEnum(src, "B::AA"));
+        REQUIRE(IsEnum(src, "A::AA::Lights"));
+        REQUIRE(IsInnerClass(src, "A", "A::AA"));
+        REQUIRE(IsInnerClass(src, "A::AA", "A::AA::AAA"));
+        REQUIRE(IsInnerClass(src, "A::AA", "A::AA::Lights"));
 
-    REQUIRE(model->name() == "t00004_class");
-    REQUIRE(!model->should_include("std::vector"));
-    REQUIRE(model->should_include("clanguml::t00004::A"));
-    REQUIRE(model->should_include("clanguml::t00004::A::AA"));
-    REQUIRE(model->should_include("clanguml::t00004::A:::AAA"));
+        REQUIRE(IsMethod<Public, Const>(src, "A", "foo"));
+        REQUIRE(IsMethod<Public, Const>(src, "A", "foo2"));
 
-    auto puml = generate_class_puml(diagram, *model);
-    AliasMatcher _A(puml);
+        REQUIRE(IsClassTemplate(src, "C<T>"));
+        REQUIRE(IsInnerClass(src, "C<T>", "C::AA"));
+        REQUIRE(IsInnerClass(src, "C::AA", "C::AA::AAA"));
+        REQUIRE(IsInnerClass(src, "C<T>", "C::CC"));
+        REQUIRE(IsInnerClass(src, "C::AA", "C::AA::CCC"));
 
-    REQUIRE_THAT(puml, StartsWith("@startuml"));
-    REQUIRE_THAT(puml, EndsWith("@enduml\n"));
-    REQUIRE_THAT(puml, IsClass(_A("A")));
-    REQUIRE_THAT(puml, IsClass(_A("AA")));
-    REQUIRE_THAT(puml, IsClass(_A("AAA")));
-    REQUIRE_THAT(puml, IsEnum(_A("Lights")));
-    REQUIRE_THAT(puml, IsInnerClass(_A("A"), _A("AA")));
-    REQUIRE_THAT(puml, IsInnerClass(_A("AA"), _A("AAA")));
-    REQUIRE_THAT(puml, IsInnerClass(_A("AA"), _A("Lights")));
-    REQUIRE_THAT(puml, (IsMethod<Public, Const>("foo")));
-    REQUIRE_THAT(puml, (IsMethod<Public, Const>("foo2")));
+        REQUIRE(IsInnerClass(src, "C<T>", "C::B<V>"));
+        REQUIRE(IsAggregation<Public>(src, "C<T>", "C::B<int>", "b_int"));
+        REQUIRE(!IsInnerClass(src, "C<T>", "C::B"));
+        REQUIRE(IsInstantiation(src, "C::B<V>", "C::B<int>"));
 
-    save_puml(
-        "./" + config.output_directory() + "/" + diagram->name + ".puml", puml);
+        REQUIRE(IsClass(src, {"detail", "D"}));
+        REQUIRE(IsClass(src, {"detail", "D::DD"}));
+        REQUIRE(IsEnum(src, {"detail", "D::AA"}));
+
+        REQUIRE(IsAssociation<Public>(src, "B", "Color", "color"));
+        REQUIRE(IsAggregation<Public>(src, "B", "B::AA", "aa"));
+        REQUIRE(IsAggregation<Private>(
+            src, "A::AA::AAA", "A::AA::Lights", "lights"));
+    });
 }

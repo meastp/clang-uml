@@ -1,7 +1,7 @@
 /**
- * src/class_diagram/model/diagram.cc
+ * @file src/class_diagram/model/diagram.cc
  *
- * Copyright (c) 2021-2022 Bartek Kryza <bkryza@gmail.com>
+ * Copyright (c) 2021-2024 Bartek Kryza <bkryza@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,21 +18,35 @@
 
 #include "diagram.h"
 
+#include "common/model/diagram_filter.h"
 #include "util/error.h"
 #include "util/util.h"
 
-#include <cassert>
-
 namespace clanguml::class_diagram::model {
 
-const std::vector<type_safe::object_ref<const class_>> &diagram::classes() const
+bool diagram::should_include(const class_member &m) const
 {
-    return classes_;
+    return filter().should_include(m);
 }
 
-const std::vector<type_safe::object_ref<const enum_>> &diagram::enums() const
+bool diagram::should_include(const class_method &m) const
 {
-    return enums_;
+    return filter().should_include(m);
+}
+
+const common::reference_vector<class_> &diagram::classes() const
+{
+    return element_view<class_>::view();
+}
+
+const common::reference_vector<enum_> &diagram::enums() const
+{
+    return element_view<enum_>::view();
+}
+
+const common::reference_vector<concept_> &diagram::concepts() const
+{
+    return element_view<concept_>::view();
 }
 
 common::model::diagram_t diagram::type() const
@@ -40,66 +54,48 @@ common::model::diagram_t diagram::type() const
     return common::model::diagram_t::kClass;
 }
 
-type_safe::optional_ref<const clanguml::common::model::diagram_element>
-diagram::get(const std::string &full_name) const
+common::optional_ref<clanguml::common::model::diagram_element> diagram::get(
+    const std::string &full_name) const
 {
-    type_safe::optional_ref<const clanguml::common::model::diagram_element> res;
-
-    res = get_class(full_name);
+    common::optional_ref<clanguml::common::model::diagram_element> res =
+        find<class_>(full_name);
 
     if (res.has_value())
         return res;
 
-    res = get_enum(full_name);
+    res = find<enum_>(full_name);
+
+    if (res.has_value())
+        return res;
+
+    res = find<concept_>(full_name);
 
     return res;
 }
 
-bool diagram::has_class(const class_ &c) const
+common::optional_ref<clanguml::common::model::diagram_element> diagram::get(
+    const eid_t id) const
 {
-    return std::any_of(classes_.cbegin(), classes_.cend(),
-        [&c](const auto &cc) { return cc.get() == c; });
+    common::optional_ref<clanguml::common::model::diagram_element> res;
+
+    res = find<class_>(id);
+
+    if (res.has_value())
+        return res;
+
+    res = find<enum_>(id);
+
+    if (res.has_value())
+        return res;
+
+    res = find<concept_>(id);
+
+    return res;
 }
 
-bool diagram::has_enum(const enum_ &e) const
-{
-    return std::any_of(enums_.cbegin(), enums_.cend(),
-        [&e](const auto &ee) { return ee.get().full_name() == e.full_name(); });
-}
-
-type_safe::optional_ref<const class_> diagram::get_class(
-    const std::string &name) const
-{
-    for (const auto &c : classes_) {
-        if (c.get().full_name(false) == name) {
-            return {c};
-        }
-    }
-
-    return type_safe::nullopt;
-}
-
-type_safe::optional_ref<const enum_> diagram::get_enum(
-    const std::string &name) const
-{
-    for (const auto &e : enums_) {
-        if (e.get().full_name(false) == name) {
-            return {e};
-        }
-    }
-
-    return type_safe::nullopt;
-}
-
-void diagram::add_type_alias(std::unique_ptr<type_alias> &&ta)
-{
-    LOG_DBG(
-        "Adding global alias: {} -> {}", ta->alias(), ta->underlying_type());
-
-    type_aliases_[ta->alias()] = std::move(ta);
-}
-
-bool diagram::add_package(std::unique_ptr<common::model::package> &&p)
+template <>
+bool diagram::add_with_namespace_path<common::model::package>(
+    std::unique_ptr<common::model::package> &&p)
 {
     LOG_DBG("Adding namespace package: {}, {}", p->name(), p->full_name(true));
 
@@ -108,83 +104,46 @@ bool diagram::add_package(std::unique_ptr<common::model::package> &&p)
     return add_element(ns, std::move(p));
 }
 
-bool diagram::add_class(std::unique_ptr<class_> &&c)
+template <>
+bool diagram::add_with_filesystem_path<common::model::package>(
+    const common::model::path & /*parent_path*/,
+    std::unique_ptr<common::model::package> &&p)
 {
-    const auto base_name = c->name();
-    const auto full_name = c->full_name(false);
+    LOG_DBG("Adding filesystem package: {}, {}", p->name(), p->full_name(true));
 
-    LOG_DBG("Adding class: {}::{}, {}", c->get_namespace().to_string(),
-        base_name, full_name);
+    auto ns = p->get_relative_namespace();
 
-    if (util::contains(base_name, "::"))
-        throw std::runtime_error("Name cannot contain namespace: " + base_name);
-
-    if (util::contains(base_name, "<"))
-        throw std::runtime_error("Name cannot contain <: " + base_name);
-
-    if (util::contains(base_name, "*"))
-        throw std::runtime_error("Name cannot contain *: " + base_name);
-
-    const auto ns = c->get_relative_namespace();
-    auto name = base_name;
-    auto name_with_ns = c->name_and_ns();
-    auto name_and_ns = ns | name;
-    const auto &cc = *c;
-
-    auto cc_ref = type_safe::ref(cc);
-
-    if (!has_class(cc)) {
-        if (add_element(ns, std::move(c)))
-            classes_.push_back(std::move(cc_ref));
-
-        const auto &el = get_element<class_>(name_and_ns).value();
-
-        if ((el.name() != name) || !(el.get_relative_namespace() == ns))
-            throw std::runtime_error(
-                "Invalid element stored in the diagram tree");
-
-        return true;
-    }
-
-    LOG_DBG("Class {} ({}) already in the model", base_name, full_name);
-
-    return false;
+    return add_element(ns, std::move(p));
 }
 
-bool diagram::add_enum(std::unique_ptr<enum_> &&e)
+template <>
+bool diagram::add_with_module_path<common::model::package>(
+    const common::model::path & /*parent_path*/,
+    std::unique_ptr<common::model::package> &&p)
 {
-    const auto full_name = e->name();
+    LOG_DBG("Adding module package: {}, {}", p->name(), p->full_name(true));
 
-    LOG_DBG("Adding enum: {}", full_name);
+    auto ns = p->get_relative_namespace();
 
-    assert(!util::contains(e->name(), "::"));
-
-    auto e_ref = type_safe::ref(*e);
-    auto ns = e->get_relative_namespace();
-
-    if (!has_enum(*e)) {
-        if (add_element(ns, std::move(e))) {
-            enums_.emplace_back(std::move(e_ref));
-            return true;
-        }
-    }
-
-    LOG_DBG("Enum {} already in the model", full_name);
-
-    return false;
+    return add_element(ns, std::move(p));
 }
 
 void diagram::get_parents(
-    std::unordered_set<type_safe::object_ref<const class_>> &parents) const
+    clanguml::common::reference_set<class_> &parents) const
 {
-    bool found_new = false;
+    bool found_new{false};
     for (const auto &parent : parents) {
         for (const auto &pp : parent.get().parents()) {
-            const auto p = get_class(pp.name());
+            auto p = find<class_>(pp.id());
+
             if (p.has_value()) {
-                auto [it, found] = parents.emplace(p.value());
+                auto [it, found] = parents.emplace(std::ref(p.value()));
                 if (found)
                     found_new = true;
+            }
+            else {
+                LOG_WARN("Couldn't find class representing base class: {} [{}]",
+                    pp.name(), pp.id());
             }
         }
     }
@@ -194,28 +153,108 @@ void diagram::get_parents(
     }
 }
 
-std::string diagram::to_alias(const std::string &full_name) const
+bool diagram::has_element(eid_t id) const
 {
-    LOG_DBG("Looking for alias for {}", full_name);
+    const auto has_class = std::any_of(classes().begin(), classes().end(),
+        [id](const auto &c) { return c.get().id() == id; });
 
-    for (const auto &c : classes_) {
-        const auto &cc = c.get();
-        if (cc.full_name() == full_name) {
-            return c->alias();
+    if (has_class)
+        return true;
+
+    const auto has_concept = std::any_of(classes().begin(), classes().end(),
+        [id](const auto &c) { return c.get().id() == id; });
+
+    if (has_concept)
+        return true;
+
+    return std::any_of(enums().begin(), enums().end(),
+        [id](const auto &c) { return c.get().id() == id; });
+}
+
+std::string diagram::to_alias(eid_t id) const
+{
+    LOG_DBG("Looking for alias for {}", id);
+
+    for (const auto &c : classes()) {
+        if (c.get().id() == id) {
+            return c.get().alias();
         }
     }
 
-    for (const auto &e : enums_) {
-        if (e.get().full_name() == full_name) {
-            return e->alias();
-        }
+    for (const auto &e : enums()) {
+        if (e.get().id() == id)
+            return e.get().alias();
     }
 
-    throw error::uml_alias_missing(
-        fmt::format("Missing alias for {}", full_name));
+    for (const auto &c : concepts()) {
+        if (c.get().id() == id)
+            return c.get().alias();
+    }
+
+    throw error::uml_alias_missing(fmt::format("Missing alias for {}", id));
 }
 
+inja::json diagram::context() const
+{
+    inja::json ctx;
+    ctx["name"] = name();
+    ctx["type"] = "class";
+
+    inja::json::array_t elements{};
+
+    // Add classes
+    for (const auto &c : classes()) {
+        elements.emplace_back(c.get().context());
+    }
+
+    // Add enums
+    for (const auto &e : enums()) {
+        elements.emplace_back(e.get().context());
+    }
+
+    // Add enums
+    for (const auto &c : concepts()) {
+        elements.emplace_back(c.get().context());
+    }
+
+    ctx["elements"] = elements;
+
+    return ctx;
 }
+
+void diagram::remove_redundant_dependencies()
+{
+    using common::eid_t;
+    using common::model::relationship;
+    using common::model::relationship_t;
+
+    for (auto &c : element_view<class_>::view()) {
+        std::set<eid_t> dependency_relationships_to_remove;
+
+        for (auto &r : c.get().relationships()) {
+            if (r.type() != relationship_t::kDependency)
+                dependency_relationships_to_remove.emplace(r.destination());
+        }
+
+        for (const auto &base : c.get().parents()) {
+            dependency_relationships_to_remove.emplace(base.id());
+        }
+
+        util::erase_if(c.get().relationships(),
+            [&dependency_relationships_to_remove](const auto &r) {
+                return r.type() == relationship_t::kDependency &&
+                    dependency_relationships_to_remove.count(r.destination()) >
+                    0;
+            });
+    }
+}
+
+bool diagram::is_empty() const
+{
+    return element_view<class_>::is_empty() &&
+        element_view<enum_>::is_empty() && element_view<concept_>::is_empty();
+}
+} // namespace clanguml::class_diagram::model
 
 namespace clanguml::common::model {
 template <>

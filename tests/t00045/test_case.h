@@ -1,7 +1,7 @@
 /**
  * tests/t00045/test_case.cc
  *
- * Copyright (c) 2021-2022 Bartek Kryza <bkryza@gmail.com>
+ * Copyright (c) 2021-2024 Bartek Kryza <bkryza@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,54 +16,40 @@
  * limitations under the License.
  */
 
-TEST_CASE("t00045", "[test-case][class]")
+TEST_CASE("t00045")
 {
-    auto [config, db] = load_config("t00045");
+    using namespace clanguml::test;
 
-    auto diagram = config.diagrams["t00045_class"];
+    auto [config, db, diagram, model] =
+        CHECK_CLASS_MODEL("t00045", "t00045_class");
 
-    REQUIRE(diagram->name == "t00045_class");
+    CHECK_CLASS_DIAGRAM(*config, diagram, *model, [](const auto &src) {
+        REQUIRE(IsClass(src, "A"));
+        REQUIRE(IsClass(src, {"ns1", "A"}));
+        REQUIRE(IsClass(src, {"ns1::ns2", "A"}));
+        REQUIRE(IsClass(src, {"ns1::ns2", "B"}));
+        REQUIRE(IsClass(src, {"ns1::ns2", "C"}));
+        REQUIRE(IsClass(src, {"ns1::ns2", "D"}));
+        REQUIRE(IsClass(src, {"ns1::ns2", "E"}));
+        REQUIRE(IsClass(src, {"ns1::ns2", "R"}));
 
-    auto model = generate_class_diagram(db, diagram);
+        REQUIRE(IsBaseClass(src, {"ns1::ns2", "A"}, {"ns1::ns2", "B"}));
+        REQUIRE(IsBaseClass(src, {"ns1", "A"}, {"ns1::ns2", "C"}));
+        REQUIRE(IsBaseClass(src, {"ns1::ns2", "A"}, {"ns1::ns2", "D"}));
+        REQUIRE(IsBaseClass(src, "A", {"ns1::ns2", "E"}));
 
-    REQUIRE(model->name() == "t00045_class");
-    REQUIRE(model->should_include("clanguml::t00045::ns1::ns2::A"));
+        REQUIRE(IsAssociation<Public>(src, "ns1::ns2::R", "ns1::ns2::A", "a"));
+        REQUIRE(IsAssociation<Public>(src, "ns1::ns2::R", "ns1::A", "ns1_a"));
+        REQUIRE(IsAssociation<Public>(
+            src, "ns1::ns2::R", "ns1::ns2::A", "ns1_ns2_a"));
+        REQUIRE(IsAssociation<Public>(src, "ns1::ns2::R", "A", "root_a"));
 
-    auto puml = generate_class_puml(diagram, *model);
-    AliasMatcher _A(puml);
+        REQUIRE(IsDependency(src, "ns1::ns2::R", "AA"));
 
-    REQUIRE_THAT(puml, StartsWith("@startuml"));
-    REQUIRE_THAT(puml, EndsWith("@enduml\n"));
-    REQUIRE_THAT(puml, IsClass(_A("A")));
-    REQUIRE_THAT(puml, IsClass(_A("ns1::A")));
-    REQUIRE_THAT(puml, IsClass(_A("ns1::ns2::A")));
-    REQUIRE_THAT(puml, IsClass(_A("ns1::ns2::B")));
-    REQUIRE_THAT(puml, IsClass(_A("ns1::ns2::C")));
-    REQUIRE_THAT(puml, IsClass(_A("ns1::ns2::D")));
-    REQUIRE_THAT(puml, IsClass(_A("ns1::ns2::E")));
-    REQUIRE_THAT(puml, IsClass(_A("ns1::ns2::R")));
-
-    REQUIRE_THAT(puml, IsBaseClass(_A("ns1::ns2::A"), _A("ns1::ns2::B")));
-    REQUIRE_THAT(puml, IsBaseClass(_A("ns1::A"), _A("ns1::ns2::C")));
-    REQUIRE_THAT(puml, IsBaseClass(_A("ns1::ns2::A"), _A("ns1::ns2::D")));
-    REQUIRE_THAT(puml, IsBaseClass(_A("A"), _A("ns1::ns2::E")));
-
-    REQUIRE_THAT(
-        puml, IsAssociation(_A("ns1::ns2::R"), _A("ns1::ns2::A"), "+a"));
-    REQUIRE_THAT(
-        puml, IsAssociation(_A("ns1::ns2::R"), _A("ns1::A"), "+ns1_a"));
-    REQUIRE_THAT(puml,
-        IsAssociation(_A("ns1::ns2::R"), _A("ns1::ns2::A"), "+ns1_ns2_a"));
-    REQUIRE_THAT(puml, IsAssociation(_A("ns1::ns2::R"), _A("A"), "+root_a"));
-
-    REQUIRE_THAT(puml, IsDependency(_A("ns1::ns2::R"), _A("AA")));
-
-    REQUIRE_THAT(puml, IsFriend<Public>(_A("ns1::ns2::R"), _A("AAA")));
-    REQUIRE_THAT(
-        puml, !IsFriend<Public>(_A("ns1::ns2::R"), _A("ns1::ns2::AAA")));
-    // TODO:
-    // REQUIRE_THAT(puml, IsFriend<Public>(_A("ns1::ns2::R"), _A("AAAA<T>")));
-
-    save_puml(
-        "./" + config.output_directory() + "/" + diagram->name + ".puml", puml);
+        REQUIRE(IsFriend<Public>(src, "ns1::ns2::R", "AAA"));
+        REQUIRE(!IsFriend<Public>(src, "ns1::ns2::R", "ns1::ns2::AAA"));
+        // TODO:
+        // REQUIRE(puml, IsFriend<Public>(src, "ns1::ns2::R"),
+        // _A("AAAA<T>")));
+    });
 }

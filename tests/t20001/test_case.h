@@ -1,7 +1,7 @@
 /**
- * tests/t20001/test_case.cc
+ * tests/t20001/test_case.h
  *
- * Copyright (c) 2021-2022 Bartek Kryza <bkryza@gmail.com>
+ * Copyright (c) 2021-2024 Bartek Kryza <bkryza@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,33 +16,62 @@
  * limitations under the License.
  */
 
-TEST_CASE("t20001", "[test-case][sequence]")
+TEST_CASE("t20001")
 {
-    auto [config, db] = load_config("t20001");
+    using namespace clanguml::test;
 
-    auto diagram = config.diagrams["t20001_sequence"];
+    auto [config, db, diagram, model] =
+        CHECK_SEQUENCE_MODEL("t20001", "t20001_sequence");
 
-    REQUIRE(diagram->name == "t20001_sequence");
+    CHECK_SEQUENCE_DIAGRAM(
+        *config, diagram, *model,
+        [](const auto &src) {
+            REQUIRE(HasTitle(src, "Basic sequence diagram example"));
 
-    auto model = generate_sequence_diagram(db, diagram);
+            REQUIRE(MessageOrder(src,
+                {
+                    //
+                    {"tmain()", "A", "A()"},    //
+                    {"tmain()", "B", "B(A &)"}, //
 
-    REQUIRE(model->name() == "t20001_sequence");
+                    {"tmain()", "A", "add(int,int)"}, //
 
-    REQUIRE(model->should_include("clanguml::t20001::A"));
-    REQUIRE(!model->should_include("clanguml::t20001::detail::C"));
-    REQUIRE(!model->should_include("std::vector"));
+                    {"tmain()", "B", "wrap_add3(int,int,int)"}, //
+                    {"B", "A", "add3(int,int,int)"},            //
+                    {"A", "A", "add(int,int)"},                 //
+                    {"A", "A", "log_result(int)", Static{}},    //
+                    {"B", "A", "log_result(int)", Static{}}     //
+                }));
 
-    auto puml = generate_sequence_puml(diagram, *model);
+            REQUIRE(!HasMessage(src, {"A", {"detail", "C"}, "add(int,int)"}));
 
-    REQUIRE_THAT(puml, StartsWith("@startuml"));
-    REQUIRE_THAT(puml, EndsWith("@enduml\n"));
+            REQUIRE(HasComment(src, "t20001 test diagram of type sequence"));
 
-    REQUIRE_THAT(puml, HasCall("A", "log_result"));
-    REQUIRE_THAT(puml, HasCall("B", "A", "log_result"));
-    REQUIRE_THAT(puml, HasCallWithResponse("B", "A", "add3"));
-    REQUIRE_THAT(puml, HasCall("A", "add"));
-    REQUIRE_THAT(puml, !HasCall("A", "detail::C", "add"));
+            REQUIRE(HasMessageComment(src, "tmain()", "Just add 2 numbers"));
 
-    save_puml(
-        "./" + config.output_directory() + "/" + diagram->name + ".puml", puml);
+            REQUIRE(HasMessageComment(src, "tmain()", "And now add another 2"));
+        },
+        [](const json_t &src) {
+            const auto &A = get_participant(src.src, "A");
+
+            CHECK(A.has_value());
+
+            CHECK(A.value()["type"] == "class");
+            CHECK(A.value()["name"] == "A");
+            CHECK(A.value()["display_name"] == "A");
+            CHECK(A.value()["namespace"] == "clanguml::t20001");
+            CHECK(A.value()["source_location"]["file"] == "t20001.cc");
+            CHECK(A.value()["source_location"]["line"] == 13);
+
+            const auto &tmain = get_participant(src.src, "tmain()");
+
+            CHECK(tmain.has_value());
+
+            CHECK(tmain.value()["type"] == "function");
+            CHECK(tmain.value()["name"] == "tmain");
+            CHECK(tmain.value()["display_name"] == "tmain()");
+            CHECK(tmain.value()["namespace"] == "clanguml::t20001");
+            CHECK(tmain.value()["source_location"]["file"] == "t20001.cc");
+            CHECK(tmain.value()["source_location"]["line"] == 61);
+        });
 }

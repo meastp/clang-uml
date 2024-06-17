@@ -1,7 +1,7 @@
 /**
- * src/class_diagram/model/class_parent.cc
+ * @file src/class_diagram/model/class_parent.cc
  *
- * Copyright (c) 2021-2022 Bartek Kryza <bkryza@gmail.com>
+ * Copyright (c) 2021-2024 Bartek Kryza <bkryza@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,10 @@ void class_parent::set_name(const std::string &name) { name_ = name; }
 
 std::string class_parent::name() const { return name_; }
 
+void class_parent::set_id(eid_t id) { id_ = id; }
+
+eid_t class_parent::id() const noexcept { return id_; }
+
 void class_parent::is_virtual(bool is_virtual) { is_virtual_ = is_virtual; }
 
 bool class_parent::is_virtual() const { return is_virtual_; }
@@ -35,4 +39,4 @@ void class_parent::set_access(common::model::access_t access)
 
 common::model::access_t class_parent::access() const { return access_; }
 
-}
+} // namespace clanguml::class_diagram::model

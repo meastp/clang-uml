@@ -1,0 +1,11 @@
+diagrams:
+  t00065_class:
+    type: class
+    glob:
+      - t00065.cc
+    generate_packages: true
+    package_type: directory
+    include:
+      namespaces:
+        - clanguml::t00065
+    using_namespace: clanguml::t00065

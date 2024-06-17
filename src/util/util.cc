@@ -1,7 +1,7 @@
 /**
- * src/util/util.cc
+ * @file src/util/util.cc
  *
- * Copyright (c) 2021-2022 Bartek Kryza <bkryza@gmail.com>
+ * Copyright (c) 2021-2024 Bartek Kryza <bkryza@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,50 +20,125 @@
 #include <spdlog/spdlog.h>
 
 #include <regex>
+#if __has_include(<sys/utsname.h>)
+#include <sys/utsname.h>
+#endif
 
-namespace clanguml {
-namespace util {
+namespace clanguml::util {
 
-const std::string WHITESPACE = " \n\r\t\f\v";
+static const auto WHITESPACE = " \n\r\t\f\v";
 
-void setup_logging(bool verbose)
-{
-    auto console =
-        spdlog::stdout_color_mt("console", spdlog::color_mode::automatic);
-
-    console->set_pattern("[%^%l%^] [tid %t] %v");
-
-    if (verbose) {
-        console->set_level(spdlog::level::debug);
+namespace {
+class pipe_t {
+public:
+    explicit pipe_t(const std::string &command, int &result)
+        : result_{result}
+        ,
+#if defined(__linux) || defined(__unix) || defined(__APPLE__)
+        pipe_{popen(fmt::format("{} 2>&1", command).c_str(), "r")}
+#elif defined(_WIN32)
+        pipe_{_popen(command.c_str(), "r")}
+#endif
+    {
     }
-}
+
+    ~pipe_t() { reset(); }
+
+    operator bool() const { return pipe_ != nullptr; }
+
+    FILE *get() const { return pipe_; }
+
+    void reset()
+    {
+        if (pipe_ == nullptr)
+            return;
+
+#if defined(__linux) || defined(__unix) || defined(__APPLE__)
+        result_ = pclose(pipe_);
+#elif defined(_WIN32)
+        result_ = _pclose(pipe_);
+#endif
+        pipe_ = nullptr;
+    }
+
+private:
+    int &result_;
+    FILE *pipe_;
+};
+} // namespace
 
 std::string get_process_output(const std::string &command)
 {
-    std::array<char, 1024> buffer;
-    std::string result;
-    std::unique_ptr<FILE, decltype(&pclose)> pipe(
-        popen(command.c_str(), "r"), pclose);
+    constexpr size_t kBufferSize{1024};
+    std::array<char, kBufferSize> buffer{};
+    std::string output;
+    int result{EXIT_FAILURE};
+
+    pipe_t pipe{command, result};
 
     if (!pipe) {
         throw std::runtime_error("popen() failed!");
     }
 
     while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
-        result += buffer.data();
+        output += buffer.data();
     }
 
-    return result;
+    pipe.reset();
+
+    if (result != EXIT_SUCCESS) {
+        throw std::runtime_error(
+            fmt::format("External command '{}' failed: {}", command, output));
+    }
+
+    return output;
+}
+
+void check_process_output(const std::string &command)
+{
+    constexpr size_t kBufferSize{1024};
+    std::array<char, kBufferSize> buffer{};
+    int result{EXIT_FAILURE};
+    std::string output;
+    pipe_t pipe{command, result};
+
+    if (!pipe) {
+        throw std::runtime_error("popen() failed!");
+    }
+
+    while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
+        output += buffer.data();
+    }
+
+    pipe.reset();
+
+    if (result != EXIT_SUCCESS) {
+        throw std::runtime_error(
+            fmt::format("External command '{}' failed: {}", command, output));
+    }
 }
 
 std::string get_env(const std::string &name)
 {
-    const char *value = std::getenv(name.c_str());
+#if defined(__linux) || defined(__unix)
+    const char *value = std::getenv(name.c_str()); // NOLINT
 
     if (value == nullptr)
         return {};
 
     return std::string{value};
+#elif defined(WINDOWS) || defined(_WIN32) || defined(WIN32)
+    static constexpr auto kMaxEnvLength = 2096U;
+    static char value[kMaxEnvLength];
+    const DWORD ret =
+        GetEnvironmentVariableA(name.c_str(), value, kMaxEnvLength);
+    if (ret == 0 || ret > kMaxEnvLength)
+        return {};
+    else
+        return value;
+#else
+    return {};
+#endif
 }
 
 bool is_git_repository()
@@ -73,65 +148,103 @@ bool is_git_repository()
     if (!env.empty())
         return true;
 
-#if defined(_WIN32) || defined(_WIN64)
-    return false;
-#else
-    return contains(
-        trim(get_process_output("git rev-parse --git-dir 2> /dev/null")),
-        ".git");
-#endif
+    std::string output;
+
+    try {
+        output = get_process_output("git rev-parse --git-dir");
+    }
+    catch (std::runtime_error &e) {
+        return false;
+    }
+
+    return contains(trim(output), ".git");
+}
+
+std::string run_git_command(
+    const std::string &cmd, const std::string &env_override)
+{
+    auto env = get_env(env_override);
+
+    if (!env.empty())
+        return env;
+
+    std::string output;
+
+    try {
+        output = get_process_output(cmd);
+    }
+    catch (std::runtime_error &e) {
+        return {};
+    }
+
+    return trim(output);
 }
 
 std::string get_git_branch()
 {
-    const auto env = get_env("CLANGUML_GIT_BRANCH");
-
-    if (!env.empty())
-        return env;
-
-    return trim(get_process_output("git rev-parse --abbrev-ref HEAD"));
+    return run_git_command(
+        "git rev-parse --abbrev-ref HEAD", "CLANGUML_GIT_BRANCH");
 }
 
 std::string get_git_revision()
 {
-    const auto env = get_env("CLANGUML_GIT_REVISION");
-
-    if (!env.empty())
-        return env;
-
-    return trim(get_process_output("git describe --tags --always"));
+    return run_git_command(
+        "git describe --tags --always", "CLANGUML_GIT_REVISION");
 }
 
 std::string get_git_commit()
 {
-    const auto env = get_env("CLANGUML_GIT_COMMIT");
-
-    if (!env.empty())
-        return env;
-
-    return trim(get_process_output("git rev-parse HEAD"));
+    return run_git_command("git rev-parse HEAD", "CLANGUML_GIT_COMMIT");
 }
 
 std::string get_git_toplevel_dir()
 {
-    const auto env = get_env("CLANGUML_GIT_TOPLEVEL_DIR");
+    return run_git_command(
+        "git rev-parse --show-toplevel", "CLANGUML_GIT_TOPLEVEL_DIR");
+}
 
-    if (!env.empty())
-        return env;
-
-    return trim(get_process_output("git rev-parse --show-toplevel"));
+std::string get_os_name()
+{
+#ifdef _WIN32
+    return "Windows, 32-bit";
+#elif _WIN64
+    return "Windows, 64-bit";
+#elif __has_include(<sys/utsname.h>)
+    struct utsname utsn; // NOLINT
+    uname(&utsn);
+    return fmt::format("{} {} {}", utsn.sysname, utsn.machine, utsn.release);
+#elif __linux__
+    return "Linux";
+#elif __APPLE__ || __MACH__
+    return "macOS";
+#elif __FreeBSD__
+    return "FreeBSD";
+#elif __unix__ || __unix
+    return "Unix";
+#else
+    return "Unknown";
+#endif
 }
 
 std::string ltrim(const std::string &s)
 {
-    size_t start = s.find_first_not_of(WHITESPACE);
+    const size_t start = s.find_first_not_of(WHITESPACE);
     return (start == std::string::npos) ? "" : s.substr(start);
 }
 
 std::string rtrim(const std::string &s)
 {
-    size_t end = s.find_last_not_of(WHITESPACE);
+    const size_t end = s.find_last_not_of(WHITESPACE);
     return (end == std::string::npos) ? "" : s.substr(0, end + 1);
+}
+
+std::string trim_typename(const std::string &s)
+{
+    auto res = trim(s);
+    if (res.find("typename ") == 0)
+        return res.substr(strlen("typename "));
+
+    return res;
 }
 
 std::string trim(const std::string &s) { return rtrim(ltrim(s)); }
@@ -141,20 +254,29 @@ std::vector<std::string> split(
 {
     std::vector<std::string> result;
 
-    if (!contains(str, delimiter))
-        result.push_back(str);
+    if (!contains(str, delimiter)) {
+        if (!str.empty())
+            result.push_back(std::move(str));
+        else if (!skip_empty)
+            result.push_back(std::move(str));
+    }
     else
-        while (str.size()) {
+        while (static_cast<unsigned int>(!str.empty()) != 0U) {
             auto index = str.find(delimiter);
             if (index != std::string::npos) {
                 auto tok = str.substr(0, index);
-                if (!tok.empty() || !skip_empty)
+                if (!tok.empty())
                     result.push_back(std::move(tok));
+                else if (!skip_empty)
+                    result.push_back(std::move(tok));
+
                 str = str.substr(index + delimiter.size());
             }
             else {
-                if (!str.empty() || !skip_empty)
-                    result.push_back(str);
+                if (!str.empty())
+                    result.push_back(std::move(str));
+                else if (!skip_empty)
+                    result.push_back(std::move(str));
                 str = "";
             }
         }
@@ -162,24 +284,32 @@ std::vector<std::string> split(
     return result;
 }
 
+std::vector<std::string> split_isspace(std::string str)
+{
+    std::vector<std::string> result;
+
+    while (static_cast<unsigned int>(!str.empty()) != 0U) {
+        auto index = std::find_if(
+            str.begin(), str.end(), [](auto c) { return std::isspace(c); });
+        if (index != str.end()) {
+            auto tok = str.substr(0, std::distance(str.begin(), index));
+            if (!tok.empty())
+                result.push_back(std::move(tok));
+            str = str.substr(std::distance(str.begin(), index) + 1);
+        }
+        else {
+            if (!str.empty())
+                result.push_back(str);
+            str = "";
+        }
+    }
+    return result;
+}
+
 std::string join(
     const std::vector<std::string> &toks, std::string_view delimiter)
 {
     return fmt::format("{}", fmt::join(toks, delimiter));
-}
-
-std::string unqualify(const std::string &s)
-{
-    auto toks = clanguml::util::split(s, " ");
-    const std::vector<std::string> qualifiers = {"static", "const", "volatile",
-        "register", "constexpr", "mutable", "struct", "enum"};
-
-    toks.erase(toks.begin(),
-        std::find_if(toks.begin(), toks.end(), [&qualifiers](const auto &t) {
-            return std::count(qualifiers.begin(), qualifiers.end(), t) == 0;
-        }));
-
-    return fmt::format("{}", fmt::join(toks, " "));
 }
 
 std::string abbreviate(const std::string &s, const unsigned int max_length)
@@ -201,8 +331,7 @@ std::string abbreviate(const std::string &s, const unsigned int max_length)
 bool find_element_alias(
     const std::string &input, std::tuple<std::string, size_t, size_t> &result)
 {
-
-    std::regex alias_regex("(@A\\([^\\).]+\\))");
+    const std::regex alias_regex(R"((@A\([^\).]+\)))");
 
     auto alias_it =
         std::sregex_iterator(input.begin(), input.end(), alias_regex);
@@ -211,8 +340,8 @@ bool find_element_alias(
     if (alias_it == end_it)
         return false;
 
-    std::smatch match = *alias_it;
-    std::string alias = match.str().substr(3, match.str().size() - 4);
+    const std::smatch &match = *alias_it;
+    const std::string alias = match.str().substr(3, match.str().size() - 4);
 
     std::get<0>(result) = alias;
     std::get<1>(result) = match.position();
@@ -221,8 +350,8 @@ bool find_element_alias(
     return true;
 }
 
-bool replace_all(
-    std::string &input, std::string pattern, std::string replace_with)
+bool replace_all(std::string &input, const std::string &pattern,
+    const std::string &replace_with)
 {
     bool replaced{false};
 
@@ -253,9 +382,11 @@ bool starts_with(
             normal_prefix /= element;
     }
 
-    return std::search(normal_path.begin(), normal_path.end(),
-               normal_prefix.begin(),
-               normal_prefix.end()) == normal_path.begin();
+    auto normal_path_str = normal_path.string();
+    auto normal_prefix_str = normal_prefix.string();
+    return std::search(normal_path_str.begin(), normal_path_str.end(),
+               normal_prefix_str.begin(),
+               normal_prefix_str.end()) == normal_path_str.begin();
 }
 
 template <> bool starts_with(const std::string &s, const std::string &prefix)
@@ -263,5 +394,106 @@ template <> bool starts_with(const std::string &s, const std::string &prefix)
     return s.rfind(prefix, 0) == 0;
 }
 
+template <> bool ends_with(const std::string &value, const std::string &suffix)
+{
+    if (suffix.size() > value.size())
+        return false;
+    return std::equal(suffix.rbegin(), suffix.rend(), value.rbegin());
 }
+
+std::size_t hash_seed(std::size_t seed)
+{
+    constexpr auto kSeedStart{0x6a3712b5};
+    constexpr auto kSeedShiftFirst{6};
+    constexpr auto kSeedShiftSecond{2};
+
+    return kSeedStart + (seed << kSeedShiftFirst) + (seed >> kSeedShiftSecond);
 }
+
+std::string path_to_url(const std::filesystem::path &p)
+{
+    std::vector<std::string> path_tokens;
+    auto it = p.begin();
+    if (p.has_root_directory()) {
+#ifdef _MSC_VER
+        // On Windows convert the root path using its drive letter, e.g.:
+        //   C:\A\B\include.h -> /c/A/B/include.h
+        if (p.root_name().string().size() > 1) {
+            if (p.is_absolute()) {
+                path_tokens.push_back(std::string{
+                    std::tolower(p.root_name().string().at(0), std::locale())});
+            }
+            it++;
+        }
+#endif
+        it++;
+    }
+
+    for (; it != p.end(); it++)
+        path_tokens.push_back(it->string());
+
+    if (p.has_root_directory())
+        return fmt::format("/{}", fmt::join(path_tokens, "/"));
+
+    return fmt::format("{}", fmt::join(path_tokens, "/"));
+}
+
+std::filesystem::path ensure_path_is_absolute(
+    const std::filesystem::path &p, const std::filesystem::path &root)
+{
+    if (p.is_absolute())
+        return p;
+
+    auto result = root / p;
+    result = result.lexically_normal();
+    result.make_preferred();
+
+    return result;
+}
+
+bool is_relative_to(
+    const std::filesystem::path &child, const std::filesystem::path &parent)
+{
+    if (child.has_root_directory() != parent.has_root_directory())
+        return false;
+
+    return starts_with(weakly_canonical(child), weakly_canonical(parent));
+}
+
+std::string format_message_comment(const std::string &comment, unsigned width)
+{
+    if (width == 0)
+        return comment;
+
+    std::string result;
+
+    if (comment.empty())
+        return result;
+
+    auto tokens = split_isspace(comment);
+
+    if (tokens.empty())
+        return result;
+
+    unsigned current_line_length{0};
+    for (const auto &token : tokens) {
+        if (current_line_length < width) {
+            result += token;
+            result += ' ';
+        }
+        else {
+            result.back() = '\n';
+            current_line_length = 0;
+            result += token;
+            result += ' ';
+        }
+
+        current_line_length += token.size() + 1;
+    }
+
+    result.pop_back();
+
+    return result;
+}
+
+} // namespace clanguml::util

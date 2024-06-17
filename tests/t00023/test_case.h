@@ -1,7 +1,7 @@
 /**
- * tests/t00023/test_case.cc
+ * tests/t00023/test_case.h
  *
- * Copyright (c) 2021-2022 Bartek Kryza <bkryza@gmail.com>
+ * Copyright (c) 2021-2024 Bartek Kryza <bkryza@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,28 +16,16 @@
  * limitations under the License.
  */
 
-TEST_CASE("t00023", "[test-case][class]")
+TEST_CASE("t00023")
 {
-    auto [config, db] = load_config("t00023");
+    using namespace clanguml::test;
 
-    auto diagram = config.diagrams["t00023_class"];
+    auto [config, db, diagram, model] =
+        CHECK_CLASS_MODEL("t00023", "t00023_class");
 
-    REQUIRE(diagram->name == "t00023_class");
-
-    auto model = generate_class_diagram(db, diagram);
-
-    REQUIRE(model->name() == "t00023_class");
-    REQUIRE(model->should_include("clanguml::t00023::Visitor"));
-
-    auto puml = generate_class_puml(diagram, *model);
-    AliasMatcher _A(puml);
-
-    REQUIRE_THAT(puml, StartsWith("@startuml"));
-    REQUIRE_THAT(puml, EndsWith("@enduml\n"));
-    REQUIRE_THAT(puml, IsAbstractClass(_A("Strategy")));
-    REQUIRE_THAT(puml, IsClass(_A("StrategyA")));
-    REQUIRE_THAT(puml, IsClass(_A("StrategyB")));
-
-    save_puml(
-        "./" + config.output_directory() + "/" + diagram->name + ".puml", puml);
+    CHECK_CLASS_DIAGRAM(*config, diagram, *model, [](const auto &src) {
+        REQUIRE(IsAbstractClass(src, "Strategy"));
+        REQUIRE(IsClass(src, "StrategyA"));
+        REQUIRE(IsClass(src, "StrategyB"));
+    });
 }

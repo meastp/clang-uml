@@ -1,111 +1,100 @@
-# clang-uml - C++ UML diagram generator based on Clang and PlantUML
+[<div align="center"><img width="600" src="https://raw.githubusercontent.com/bkryza/clang-uml/master/docs/img/clang-uml-logo.svg?sanitize=true"></div>](https://github.com/bkryza/clang-uml/releases)
+
+# C++ UML diagram generator based on Clang
 
 [![Build status](https://github.com/bkryza/clang-uml/actions/workflows/build.yml/badge.svg)](https://github.com/bkryza/clang-uml/actions)
 [![Coverage](https://codecov.io/gh/bkryza/clang-uml/branch/master/graph/badge.svg)](https://codecov.io/gh/bkryza/clang-uml)
-[![Version](https://img.shields.io/badge/version-0.1.0-blue)](https://github.com/bkryza/clang-uml/releases)
+[![Version](https://img.shields.io/badge/version-0.5.2-blue)](https://github.com/bkryza/clang-uml/releases)
+[![Version](https://img.shields.io/badge/LLVM-12,13,14,15,16,17,18-orange)](https://github.com/bkryza/clang-uml/releases)
+[![Doxygen](https://img.shields.io/badge/Docs-Doxygen-gainsboro)](https://clang-uml.github.io)
 
-`clang-uml` is an automatic C++ to [PlantUML](https://plantuml.com) class, sequence
-and package diagram generator, driven by YAML configuration files. The main idea behind the
+`clang-uml` is an automatic C++ to UML class, sequence, package and include diagram generator, driven by
+YAML configuration files. The main idea behind the
 project is to easily maintain up-to-date diagrams within a code-base or document
 legacy code. The configuration file or files for `clang-uml` define the
-type and contents of each generated diagram.
+types and contents of each generated diagram.
+The diagrams can be generated in [PlantUML](https://plantuml.com),
+[MermaidJS](https://mermaid.js.org/) and JSON formats.
 
-`clang-uml` currently supports C++ up to version 17.
+`clang-uml` currently supports C++ up to version 17 with partial support for C++ 20.
+
+Full documentation can be found at [clang-uml.github.io](https://clang-uml.github.io).
+
+To see what `clang-uml` can do, checkout the diagrams generated for unit
+test cases [here](./docs/test_cases.md) or examples in
+[clang-uml-examples](https://github.com/bkryza/clang-uml-examples) repository.
 
 ## Features
+
 Main features supported so far include:
 
 * **Class diagram generation**
-    * Basic class properties and methods including visibility
-    * Class relationships including associations, aggregations, dependencies and friendship
-    * Template instantiation relationships
-    * Relationship inference from C++ containers and smart pointers
-    * Diagram content filtering based on namespaces, elements and relationships
-    * Optional package generation from namespaces
-    * Interactive links to online code to classes, methods and class fields in SVG diagrams
+    * Class properties and methods including access scope - [_example_](docs/test_cases/t00003.md)
+    * Class inheritance - [_example_](docs/test_cases/t00002.md)
+    * Other class relationships including associations, aggregations, dependencies and friendship - [_example_](docs/test_cases/t00006.md)
+    * Template instantiation relationships - [_example_](docs/test_cases/t00014.md)
+    * Template specialization and instantiation based on deduced context - [_example_](docs/test_cases/t00062.md)
+    * Relationship inference from C++ containers and smart pointers - [_example_](docs/test_cases/t00007.md)
+    * Diagram content filtering based on namespaces, elements and relationships - [_example_](docs/test_cases/t00040.md)
+    * Optional package generation from namespaces (only PlantUML) - [_example_](docs/test_cases/t00036.md)
+    * Optional package generation from subdirectories (only PlantUML) - [_example_](docs/test_cases/t00065.md)
+    * Optional package generation from C++20 modules (only PlantUML) - [_example_](docs/test_cases/t00071.md)
+    * Interactive links to online code or docs for classes, methods and class fields in SVG diagrams - [_example_](https://raw.githubusercontent.com/bkryza/clang-uml/master/docs/test_cases/t00002_class.svg)
+    * Support for plain C99/C11 code (struct, units and their relationships) - [_example_](docs/test_cases/t00057.md)
+    * C++20 concept constraints - [_example_](docs/test_cases/t00059.md)
+    * C++20 coroutines - [_example_](docs/test_cases/t00069.md)
+    * Diagram content filtering based on C++20 modules - [_example_](docs/test_cases/t00070.md)
 * **Sequence diagram generation**
-    * Generation of sequence diagram from one code location to another (currently only for non-template code)
+    * Generation of sequence diagram from specific method or function - [_example_](docs/test_cases/t20001.md)
+    * Generation of loop and conditional statements - [_example_](docs/test_cases/t20021.md)
+    * Generation of switch statements - [_example_](docs/test_cases/t20024.md)
+    * Generation of try/catch blocks - [_example_](docs/test_cases/t20023.md)
+    * Handling of template code including constexpr conditionals - [_example_](docs/test_cases/t20018.md)
+    * Handling of lambda expressions - [_example_](docs/test_cases/t20012.md)
+    * Interactive links to online code to classes and call expressions - [_example_](https://raw.githubusercontent.com/bkryza/clang-uml/master/docs/test_cases/t20021_sequence.svg)
+    * Support for CUDA Kernel and CUDA Device function calls - [_example_](docs/test_cases/t20050.md)
 * **Package diagram generation**
-    * Generation of package diagram based on C++ namespaces
-    * Interactive links to online code to packages
+    * Generation of package diagram based on C++ namespaces - [_example_](docs/test_cases/t30001.md)
+    * Generation of package diagram based on subdirectories - [_example_](docs/test_cases/t30010.md)
+    * Generation of package diagram based on C++20 modules - [_example_](docs/test_cases/t30014.md)
+    * Dependencies between packages based on symbols used in the code - [_example_](docs/test_cases/t30002.md)
+    * Interactive links to online code to packages - [_example_](https://raw.githubusercontent.com/bkryza/clang-uml/master/docs/test_cases/t30002_package.svg)
 * **Include graph diagram generation**
-    * Show include graph for selected files
-  
-To see what `clang-uml` can do so far, checkout the diagrams generated for unit test cases [here](./docs/test_cases.md)
-and examples in [clang-uml-examples](https://github.com/bkryza/clang-uml-examples) repository.
+    * Show include graph for selected files - [_example_](docs/test_cases/t40001.md)
+
+More comprehensive documentation can be at [clang-uml.github.io](https://clang-uml.github.io).
 
 ## Installation
 
-### Distribution packages
-
-#### Ubuntu
-```bash
-sudo add-apt-repository ppa:bkryza/clang-uml
-sudo apt update
-sudo apt install clang-uml
-```
-
-#### Conda
-```bash
-conda config --add channels conda-forge
-conda config --set channel_priority strict
-conda install -c bkryza/label/clang-uml clang-uml
-```
-
-### Building from source
-First make sure that you have the following dependencies installed:
-
-```bash
-# Ubuntu (clang version will vary depending on Ubuntu version)
-apt install ccache cmake libyaml-cpp-dev clang-12 libclang-12-dev libclang-cpp12-dev
-
-# macos
-brew install ccache cmake llvm yaml-cpp
-```
-> Please note that on macos this tool is not fully functional, i.e. several test cases fail. The build instructions are
-> provided for development purposes only.
-
-Then proceed with building the sources:
-
-```bash
-git clone https://github.com/bkryza/clang-uml
-cd clang-uml
-make submodules
-# Please note that top level Makefile is just a convenience wrapper for CMake
-make release
-release/clang-uml --help
-
-# To build using a specific installed version of LLVM use:
-LLVM_CONFIG_PATH=/usr/bin/llvm-config-13 make release
-
-# To build on macos, it is necessary to provide also path to LLVM cmake directory, e.g.:
-export LLVM_PREFIX="/usr/local/Cellar/llvm@12/12.0.1_1"
-LLVM_CONFIG_PATH="${LLVM_PREFIX}/bin/llvm-config" CMAKE_PREFIX_PATH="${LLVM_PREFIX}/lib/cmake/llvm/" make test
-
-# Optionally
-make install
-# or
-export PATH=$PATH:$PWD/release
-```
+Installation instructions for `Linux`, `macos` and `Windows` can be found
+[here](./docs/installation.md).
 
 ## Usage
 
 ### Generating compile commands database
+
 `clang-uml` requires an up-to-date
 [compile_commands.json](https://clang.llvm.org/docs/JSONCompilationDatabase.html)
 file, containing the list of commands used for compiling the source code.
 Nowadays, this file can be generated rather easily using multiple methods:
-  * For [CMake](https://cmake.org/) projects, simply invoke the `cmake` command
-    as `cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ...`
-  * For Make projects checkout [compiledb](https://github.com/nickdiego/compiledb) or [Bear](https://github.com/rizsotto/Bear)
-  * For Boost-based projects try [commands_to_compilation_database](https://github.com/tee3/commands_to_compilation_database)
-  * For SCons, invoke `compilation_db` tool (requires SCons > 4.0.0)
+
+* For [CMake](https://cmake.org/) projects, simply invoke the `cmake` command
+  as `cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ...`
+* For Make projects checkout [compiledb](https://github.com/nickdiego/compiledb)
+  or [Bear](https://github.com/rizsotto/Bear)
+* For Boost-based projects
+  try [commands_to_compilation_database](https://github.com/tee3/commands_to_compilation_database)
+* For SCons, invoke `compilation_db` tool (requires SCons > 4.0.0)
+* For Bazel, try [bazel-compile-commands-extractor](https://github.com/hedronvision/bazel-compile-commands-extractor)
+* For Microsoft Visual Studio projects try [Clang Power Tools](https://www.clangpowertools.com)
 
 ### Invocation
-By default, `config-uml` will assume that the configuration file `.clang-uml`
+
+By default, `clang-uml` will assume that the configuration file `.clang-uml`
 and compilation database `compile_commands.json` files are in the
 current directory, so if they are in the top level directory of a project,
 simply run:
+
 ```bash
 clang-uml
 ```
@@ -114,6 +103,7 @@ The output path for diagrams, as well as alternative location of
 compilation database can be specified in `.clang-uml` configuration file.
 
 For other options checkout help:
+
 ```bash
 clang-uml --help
 ```
@@ -125,15 +115,13 @@ which should be generated by `clang-uml`. Basic example is as follows:
 
 ```yaml
 compilation_database_dir: .
-output_directory: puml
+output_directory: diagrams
 diagrams:
   myproject_class:
     type: class
     glob:
-      - src/*.h
       - src/*.cc
-    using_namespace:
-      - myproject
+    using_namespace: myproject
     include:
       namespaces:
         - myproject
@@ -148,6 +136,7 @@ diagrams:
 See [here](docs/configuration_file.md) for detailed configuration file reference guide.
 
 ## Examples
+
 To see what `clang-uml` can do, checkout the test cases documentation [here](./docs/test_cases.md).
 
 In order to see diagrams for the `clang-uml` itself, based on its own [config](.clang-uml) run
@@ -163,7 +152,7 @@ and checkout the SVG diagrams in `docs/diagrams` folder.
 
 #### Example
 
-Source code:
+The following C++ code:
 
 ```cpp
 template <typename T, typename P> struct A {
@@ -184,6 +173,7 @@ using PairPairBA = std::pair<std::pair<B, A<long, T>>, long>;
 template <class T> using VectorPtr = std::unique_ptr<std::vector<T>>;
 template <class T> using APtr = std::unique_ptr<A<double, T>>;
 template <class T> using ASharedPtr = std::shared_ptr<A<double, T>>;
+
 template <class T, class U>
 using AAPtr = std::unique_ptr<std::pair<A<double, T>, A<long, U>>>;
 
@@ -196,11 +186,13 @@ using BVector2 = BVector;
 
 using AIntString = AString<int>;
 using ACharString = AString<char>;
-using AWCharString = AString<wchar_t>;
+
 using AStringString = AString<std::string>;
 using BStringString = AStringString;
 
-class R {
+template <typename T> class R {
+    using AWCharString = AString<wchar_t>;
+
     PairPairBA<bool> bapair;
 
     APtr<bool> abool;
@@ -211,6 +203,7 @@ class R {
     AIntString intstring;
     AStringString stringstring;
     BStringString bstringstring;
+    AAPtr<T, float> atfloat;
 
 protected:
     BVector bs;
@@ -224,7 +217,7 @@ public:
 };
 ```
 
-generates the following diagram (via PlantUML):
+results in the following diagram (via PlantUML):
 
 ![class_diagram_example](docs/test_cases/t00014_class.svg)
 
@@ -238,81 +231,86 @@ generates the following diagram (via PlantUML):
 The following C++ code:
 
 ```cpp
-#include <algorithm>
-#include <numeric>
-#include <vector>
+#include <atomic>
+#include <functional>
+#include <iostream>
+#include <memory>
+#include <string>
 
 namespace clanguml {
-namespace t20001 {
+namespace t20029 {
+std::string encode_b64(std::string &&content) { return std::move(content); }
 
-namespace detail {
-struct C {
-    auto add(int x, int y) { return x + y; }
-};
-}
-
-class A {
+template <typename T> class Encoder : public T {
 public:
-    A() {}
-
-    int add(int x, int y) { return m_c.add(x, y); }
-
-    int add3(int x, int y, int z)
+    bool send(std::string &&msg)
     {
-        std::vector<int> v;
-        v.push_back(x);
-        v.push_back(y);
-        v.push_back(z);
-        auto res = add(v[0], v[1]) + v[2];
-        log_result(res);
-        return res;
+        return T::send(std::move(
+            // Encode the message using Base64 encoding and pass it to the next
+            // layer
+            encode(std::move(msg))));
     }
 
-    void log_result(int r) {}
-
-private:
-    detail::C m_c{};
+protected:
+    std::string encode(std::string &&msg) { return encode_b64(std::move(msg)); }
 };
 
-class B {
+template <typename T> class Retrier : public T {
 public:
-    B(A &a)
-        : m_a{a}
+    bool send(std::string &&msg)
     {
+        std::string buffer{std::move(msg)};
+
+        int retryCount = 5;
+
+        // Repeat until send() succeeds or retry count is exceeded
+        while (retryCount--) {
+            if (T::send(buffer))
+                return true;
+        }
+
+        return false;
+    }
+};
+
+class ConnectionPool {
+public:
+    void connect()
+    {
+        if (!is_connected_.load())
+            connect_impl();
     }
 
-    int wrap_add(int x, int y)
-    {
-        auto res = m_a.add(x, y);
-        m_a.log_result(res);
-        return res;
-    }
-
-    int wrap_add3(int x, int y, int z)
-    {
-        auto res = m_a.add3(x, y, z);
-        m_a.log_result(res);
-        return res;
-    }
+    bool send(const std::string &msg) { return true; }
 
 private:
-    A &m_a;
+    void connect_impl() { is_connected_ = true; }
+
+    std::atomic<bool> is_connected_;
 };
 
 int tmain()
 {
-    A a;
-    B b(a);
+    auto pool = std::make_shared<Encoder<Retrier<ConnectionPool>>>();
 
-    return b.wrap_add3(1, 2, 3);
+    // Establish connection to the remote server synchronously
+    pool->connect();
+
+    // Repeat for each line in the input stream
+    for (std::string line; std::getline(std::cin, line);) {
+        if (!pool->send(std::move(line)))
+            break;
+    }
+
+    return 0;
 }
 }
 }
 ```
 
-generates the following diagram (via PlantUML):
+results in the following diagram (via PlantUML):
 
-![sequence_diagram_example](docs/test_cases/t20001_sequence.svg)
+![sequence_diagram_example](docs/test_cases/t20029_sequence.svg)
 
 ### Package diagrams
 
@@ -355,11 +353,14 @@ class B : public ns1::ns2::Anon {
 }
 ```
 
-generates the following diagram (via PlantUML):
+results in the following diagram (via PlantUML):
 
 ![package_diagram_example](docs/test_cases/t30003_package.svg)
 
 ### Include diagrams
+
+> In case you're looking for a simpler tool to visualize and analyze include graphs
+> checkout my other tool - [clang-include-graph](https://github.com/bkryza/clang-include-graph)
 
 #### Example
 
@@ -376,25 +377,26 @@ tests/t40001
 
 ```
 
-generates the following diagram (via PlantUML) based on include directives in the code:
+results in the following diagram (via PlantUML) based on include directives in the code:
 
 ![package_diagram_example](docs/test_cases/t40001_include.svg)
 
 ### Default mappings
 
-| UML                                    | PlantUML   |
-| ----                                   | ---        |
-| Inheritance                            | ![extension](docs/img/puml_inheritance.png) |
-| Association                            | ![association](docs/img/puml_association.png) |
-| Dependency                             | ![dependency](docs/img/puml_dependency.png) |
-| Aggregation                            | ![aggregation](docs/img/puml_aggregation.png) |
-| Composition                            | ![composition](docs/img/puml_composition.png) |
-| Template specialization/instantiation  | ![specialization](docs/img/puml_instantiation.png) |
-| Nesting (inner class/enum)             | ![nesting](docs/img/puml_nested.png) |
-| Include (local)                        | ![association](docs/img/puml_association.png) |
-| Include (system)                       | ![dependency](docs/img/puml_dependency.png) |
+| UML                                    | PlantUML   | MermaidJS                                      |
+| ----                                   | ---        |------------------------------------------------|
+| Inheritance                            | ![extension](docs/img/puml_inheritance.png) | ![extension](docs/img/mermaid_inheritance.png) |
+| Association                            | ![association](docs/img/puml_association.png) | ![association](docs/img/mermaid_association.png) |
+| Dependency                             | ![dependency](docs/img/puml_dependency.png) | ![dependency](docs/img/mermaid_dependency.png) |
+| Aggregation                            | ![aggregation](docs/img/puml_aggregation.png) | ![aggregation](docs/img/mermaid_aggregation.png) |
+| Composition                            | ![composition](docs/img/puml_composition.png) | ![composition](docs/img/mermaid_composition.png) |
+| Template specialization/instantiation  | ![specialization](docs/img/puml_instantiation.png) | ![specialization](docs/img/mermaid_instantiation.png) |
+| Nesting (inner class/enum)             | ![nesting](docs/img/puml_nested.png) | ![nesting](docs/img/mermaid_nested.png) |
+| Include (local)                        | ![association](docs/img/puml_association.png) | ![association](docs/img/mermaid_association.png) |
+| Include (system)                       | ![dependency](docs/img/puml_dependency.png) | ![dependency](docs/img/mermaid_dependency.png) |
 
 ### Diagram content filtering
+
 For typical code bases, generating a single diagram from entire code or even a single namespace can be too big to
 be useful, e.g. as part of documentation. `clang-uml` allows specifying content to be included and excluded from
 each diagram using simple YAML configuration:
@@ -432,44 +434,34 @@ exclude:
     - clanguml::common::ClassF
 ```
 
-### Comment decorators
-
-`clang-uml` provides a set of in-comment directives, called decorators, which allow custom control over
-generation of UML diagrams from C++ and overriding default inference rules for relationships.
-
-The following decorators are currently supported:
-- [note](docs/test_cases/t00028.md) - add a PlantUML note to a C++ entity
-- [skip](docs/test_cases/t00029.md) - skip the underlying C++ entity
-- [skiprelationship](docs/test_cases/t00029.md) - skip only relationship generation for a class property
-- [composition](docs/test_cases/t00030.md) - document the property as composition
-- [association](docs/test_cases/t00030.md) - document the property as association
-- [aggregation](docs/test_cases/t00030.md) - document the property as aggregation
-- [style](docs/test_cases/t00031.md) - add PlantUML style to a C++ entity
-
-### Doxygen integration
-`clang-uml` decorstors can be omitted completely in [Doxygen](https://www.doxygen.nl/index.html), by adding the following
-lines to the Doxygen config file:
-
-```
-ALIASES                += clanguml=""
-ALIASES                += clanguml{1}=""
-ALIASES                += clanguml{2}=""
-ALIASES                += clanguml{3}=""
-```
+More details on this can be found in the [diagram filters](./docs/diagram_filters.md) documentation section.
 
 ### Test cases
 
 The build-in test cases used for unit testing of the `clang-uml`, can be browsed [here](./docs/test_cases.md).
 
 ## Acknowledgements
+
 This project relies on the following great tools:
-  * [libclang](https://clang.llvm.org/) - a C/C++ frontend for LLVM
-  * [cppast](https://github.com/foonathan/cppast) - high-level C++ API for libclang
-  * [PlantUML](https://plantuml.com/) - language and diagram for generating UML diagrams
-  * [Catch2](https://github.com/catchorg/Catch2) - C++ unit test framework
-  * [glob](https://github.com/p-ranav/glob) - Unix style path expansion for C++
-  * [CLI11](https://github.com/CLIUtils/CLI11) - command line parser for C++
-  * [inja](https://github.com/pantor/inja) - a template engine for modern C++
+
+* [Clang LibTooling](https://clang.llvm.org/docs/LibTooling.html) - a C++ library for creating tools based on Clang
+* [PlantUML](https://plantuml.com/) - language and diagram for generating UML diagrams
+* [MermaidJS](https://mermaid.js.org/) - JavaScript based diagramming and charting tool
+* [doctest](https://github.com/doctest/doctest) - C++ unit test framework
+* [glob](https://github.com/p-ranav/glob) - Unix style path expansion for C++
+* [indicators](https://github.com/p-ranav/indicators) - Activity indicators for modern C++
+* [CLI11](https://github.com/CLIUtils/CLI11) - command line parser for C++
+* [inja](https://github.com/pantor/inja) - a template engine for modern C++
+* [backward-cpp](https://github.com/bombela/backward-cpp) - stack trace pretty printer for C++
+* [yaml-cpp](https://github.com/jbeder/yaml-cpp) - YAML parser library for C++
+* [spdlog](https://github.com/gabime/spdlog) - Fast C++ logging library
+* [Doxygen](https://www.doxygen.nl/) - C++ documentation generator
+* [Doxygen Awesome](https://jothepro.github.io/doxygen-awesome-css) - Doxygen CSS style
+* [miroir](https://gitlab.com/madyanov/miroir) - YAML schema validation library for C++
+
+## Contributing
+
+If you would like to contribute to the project, please check out [contributing guidelines](./CONTRIBUTING.md).
 
 ## LICENSE
 

@@ -1,7 +1,7 @@
 /**
- * tests/t00013/test_case.cc
+ * tests/t00013/test_case.h
  *
- * Copyright (c) 2021-2022 Bartek Kryza <bkryza@gmail.com>
+ * Copyright (c) 2021-2024 Bartek Kryza <bkryza@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,52 +16,36 @@
  * limitations under the License.
  */
 
-TEST_CASE("t00013", "[test-case][class]")
+TEST_CASE("t00013")
 {
-    auto [config, db] = load_config("t00013");
+    using namespace clanguml::test;
 
-    auto diagram = config.diagrams["t00013_class"];
+    auto [config, db, diagram, model] =
+        CHECK_CLASS_MODEL("t00013", "t00013_class");
 
-    REQUIRE(diagram->name == "t00013_class");
+    CHECK_CLASS_DIAGRAM(*config, diagram, *model, [](const auto &src) {
+        REQUIRE(IsClass(src, "A"));
+        REQUIRE(IsClass(src, "B"));
+        REQUIRE(IsClass(src, "C"));
+        REQUIRE(IsClass(src, "D"));
+        REQUIRE(IsClassTemplate(src, "E<T>"));
+        REQUIRE(IsClassTemplate(src, "G<T,Args...>"));
 
-    auto model = generate_class_diagram(db, diagram);
-
-    REQUIRE(model->name() == "t00013_class");
-    REQUIRE(model->should_include("clanguml::t00013::A"));
-    REQUIRE(model->should_include("clanguml::t00013::B"));
-    REQUIRE(model->should_include("ABCD::F"));
-
-    auto puml = generate_class_puml(diagram, *model);
-    AliasMatcher _A(puml);
-
-    REQUIRE_THAT(puml, StartsWith("@startuml"));
-    REQUIRE_THAT(puml, EndsWith("@enduml\n"));
-    REQUIRE_THAT(puml, IsClass(_A("A")));
-    REQUIRE_THAT(puml, IsClass(_A("B")));
-    REQUIRE_THAT(puml, IsClass(_A("C")));
-    REQUIRE_THAT(puml, IsClass(_A("D")));
-    REQUIRE_THAT(puml, IsClassTemplate("E", "T"));
-    REQUIRE_THAT(puml, IsClassTemplate("G", "T,Args..."));
-
-    REQUIRE_THAT(puml, !IsDependency(_A("R"), _A("R")));
-    REQUIRE_THAT(puml, IsDependency(_A("R"), _A("A")));
-    REQUIRE_THAT(puml, IsDependency(_A("R"), _A("B")));
-    REQUIRE_THAT(puml, IsDependency(_A("R"), _A("C")));
-    REQUIRE_THAT(puml, IsDependency(_A("R"), _A("D")));
-    REQUIRE_THAT(puml, IsDependency(_A("D"), _A("R")));
-    REQUIRE_THAT(puml, IsDependency(_A("R"), _A("E<T>")));
-    REQUIRE_THAT(puml, IsDependency(_A("R"), _A("E<int>")));
-    REQUIRE_THAT(puml, IsInstantiation(_A("E<T>"), _A("E<int>")));
-    REQUIRE_THAT(puml, IsInstantiation(_A("E<T>"), _A("E<std::string>")));
-    REQUIRE_THAT(
-        puml, IsAggregation(_A("R"), _A("E<std::string>"), "-estring"));
-    REQUIRE_THAT(puml, IsDependency(_A("R"), _A("ABCD::F<T>")));
-    REQUIRE_THAT(puml, IsInstantiation(_A("ABCD::F<T>"), _A("F<int>")));
-    REQUIRE_THAT(puml, IsDependency(_A("R"), _A("F<int>")));
-
-    REQUIRE_THAT(puml,
-        IsInstantiation(_A("G<T,Args...>"), _A("G<int,float,std::string>")));
-
-    save_puml(
-        "./" + config.output_directory() + "/" + diagram->name + ".puml", puml);
+        REQUIRE(!IsDependency(src, "R", "R"));
+        REQUIRE(IsDependency(src, "R", "A"));
+        REQUIRE(IsDependency(src, "R", "B"));
+        REQUIRE(IsDependency(src, "R", "C"));
+        REQUIRE(IsDependency(src, "R", "D"));
+        REQUIRE(IsDependency(src, "D", "R"));
+        REQUIRE(IsDependency(src, "R", "E<T>"));
+        REQUIRE(IsDependency(src, "R", "E<int>"));
+        REQUIRE(IsInstantiation(src, "E<T>", "E<int>"));
+        REQUIRE(IsInstantiation(src, "E<T>", "E<std::string>"));
+        REQUIRE(IsAggregation<Private>(src, "R", "E<std::string>", "estring"));
+        REQUIRE(IsDependency(src, "R", "ABCD::F<T>"));
+        REQUIRE(IsInstantiation(src, "ABCD::F<T>", "ABCD::F<int>"));
+        REQUIRE(IsDependency(src, "R", "ABCD::F<int>"));
+        REQUIRE(
+            IsInstantiation(src, "G<T,Args...>", "G<int,float,std::string>"));
+    });
 }

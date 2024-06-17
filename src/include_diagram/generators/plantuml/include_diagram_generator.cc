@@ -1,7 +1,7 @@
 /**
- * src/include_diagram/generators/plantuml/include_diagram_generator.cc
+ * @file src/include_diagram/generators/plantuml/include_diagram_generator.cc
  *
- * Copyright (c) 2021-2022 Bartek Kryza <bkryza@gmail.com>
+ * Copyright (c) 2021-2024 Bartek Kryza <bkryza@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,22 +47,23 @@ void generator::generate_relationships(
         util::for_each_if(
             f.relationships(),
             [this](const auto &r) {
-                return m_model.should_include(r.type()) &&
-                    util::contains(m_generated_aliases, r.destination());
+                return model().should_include(r.type()) &&
+                    util::contains(m_generated_aliases,
+                        model().get(r.destination()).value().alias());
             },
-            [&f, &ostr](const auto &r) {
+            [&f, &ostr, this](const auto &r) {
                 ostr << f.alias() << " "
-                     << plantuml_common::to_plantuml(r.type(), r.style()) << " "
-                     << r.destination() << '\n';
+                     << plantuml_common::to_plantuml(r, config()) << " "
+                     << model().get(r.destination()).value().alias() << '\n';
             });
     }
 }
 
 void generator::generate(const source_file &f, std::ostream &ostr) const
 {
-    LOG_DBG("Generating source_file {}", f.name());
-
     if (f.type() == common::model::source_file_t::kDirectory) {
+        LOG_DBG("Generating directory {}", f.name());
+
         ostr << "folder \"" << f.name();
         ostr << "\" as " << f.alias();
         ostr << " {\n";
@@ -76,10 +77,12 @@ void generator::generate(const source_file &f, std::ostream &ostr) const
         m_generated_aliases.emplace(f.alias());
     }
     else {
-        if (m_model.should_include(f)) {
+        LOG_DBG("Generating file {}", f.name());
+
+        if (model().should_include(f)) {
             ostr << "file \"" << f.name() << "\" as " << f.alias();
 
-            if (m_config.generate_links) {
+            if (config().generate_links) {
                 generate_link(ostr, f);
             }
 
@@ -90,32 +93,18 @@ void generator::generate(const source_file &f, std::ostream &ostr) const
     }
 }
 
-void generator::generate(std::ostream &ostr) const
+void generator::generate_diagram(std::ostream &ostr) const
 {
-    ostr << "@startuml" << '\n';
-
-    generate_plantuml_directives(ostr, m_config.puml().before);
-
     // Generate files and folders
-    util::for_each_if(
-        m_model,
-        [this](const auto &f) {
-            return f->type() == common::model::source_file_t::kDirectory ||
-                m_model.should_include(*f);
-        },
-        [this, &ostr](const auto &f) {
-            generate(dynamic_cast<source_file &>(*f), ostr);
-        });
+    util::for_each(model(), [this, &ostr](const auto &f) {
+        generate(dynamic_cast<source_file &>(*f), ostr);
+    });
 
     // Process file include relationships
-    util::for_each(m_model, [this, &ostr](const auto &f) {
+    util::for_each(model(), [this, &ostr](const auto &f) {
         generate_relationships(dynamic_cast<source_file &>(*f), ostr);
     });
 
     generate_config_layout_hints(ostr);
-
-    generate_plantuml_directives(ostr, m_config.puml().after);
-
-    ostr << "@enduml" << '\n';
 }
-}
+} // namespace clanguml::include_diagram::generators::plantuml

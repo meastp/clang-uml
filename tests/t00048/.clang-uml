@@ -1,0 +1,11 @@
+diagrams:
+  t00048_class:
+    type: class
+    glob:
+      - b_t00048.cc
+      - a_t00048.cc
+      - t00048.cc
+    using_namespace: clanguml::t00048
+    include:
+      namespaces:
+        - clanguml::t00048

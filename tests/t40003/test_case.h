@@ -1,7 +1,7 @@
 /**
- * tests/t40003/test_case.cc
+ * tests/t40003/test_case.h
  *
- * Copyright (c) 2021-2022 Bartek Kryza <bkryza@gmail.com>
+ * Copyright (c) 2021-2024 Bartek Kryza <bkryza@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,36 +16,35 @@
  * limitations under the License.
  */
 
-TEST_CASE("t40003", "[test-case][package]")
+TEST_CASE("t40003")
 {
-    auto [config, db] = load_config("t40003");
+    using namespace clanguml::test;
 
-    auto diagram = config.diagrams["t40003_include"];
+    auto [config, db, diagram, model] =
+        CHECK_INCLUDE_MODEL("t40003", "t40003_include");
 
-    REQUIRE(diagram->name == "t40003_include");
+    CHECK_INCLUDE_DIAGRAM(*config, diagram, *model, [](const auto &src) {
+        REQUIRE(IsFolder(src, "include/dependants"));
+        REQUIRE(IsFolder(src, "include/dependencies"));
+        REQUIRE(IsFolder(src, "src/dependants"));
+        REQUIRE(IsFolder(src, "src/dependencies"));
 
-    auto model = generate_include_diagram(db, diagram);
+        REQUIRE(IsFile(src, "include/dependants/t1.h"));
+        REQUIRE(IsFile(src, "include/dependants/t2.h"));
+        REQUIRE(IsFile(src, "include/dependants/t3.h"));
+        REQUIRE(!IsFile(src, "include/dependants/t4.h"));
+        REQUIRE(IsFile(src, "src/dependants/t1.cc"));
+        REQUIRE(!IsFile(src, "include/dependants/t10.h"));
+        REQUIRE(!IsFile(src, "include/dependants/t11.h"));
 
-    REQUIRE(model->name() == "t40003_include");
+        REQUIRE(IsFile(src, "include/dependencies/t1.h"));
+        REQUIRE(IsFile(src, "include/dependencies/t2.h"));
+        REQUIRE(IsFile(src, "include/dependencies/t3.h"));
+        REQUIRE(!IsFile(src, "include/dependencies/t4.h"));
+        REQUIRE(!IsFile(src, "include/dependencies/t6.h"));
 
-    auto puml = generate_include_puml(diagram, *model);
-
-    AliasMatcher _A(puml);
-
-    REQUIRE_THAT(puml, StartsWith("@startuml"));
-    REQUIRE_THAT(puml, EndsWith("@enduml\n"));
-
-    REQUIRE_THAT(puml, IsFolder("dependants"));
-    REQUIRE_THAT(puml, IsFolder("dependencies"));
-
-    REQUIRE_THAT(puml, IsFile("t1.h"));
-    REQUIRE_THAT(puml, IsFile("t2.h"));
-    REQUIRE_THAT(puml, IsFile("t3.h"));
-
-    REQUIRE_THAT(puml, !IsFile("t4.h"));
-    REQUIRE_THAT(puml, IsFile("t5.h"));
-    REQUIRE_THAT(puml, !IsFile("t6.h"));
-
-    save_puml(
-        "./" + config.output_directory() + "/" + diagram->name + ".puml", puml);
+        REQUIRE(IsFile(src, "src/dependencies/t2.cc"));
+        REQUIRE(!IsFile(src, "include/dependencies/t7.h"));
+        REQUIRE(!IsFile(src, "include/dependencies/t8.h"));
+    });
 }

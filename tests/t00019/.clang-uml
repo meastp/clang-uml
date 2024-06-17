@@ -1,13 +1,13 @@
-compilation_database_dir: ..
-output_directory: puml
 diagrams:
   t00019_class:
     type: class
     glob:
-      - ../../tests/t00019/**.h
-      - ../../tests/t00019/**.cc
-    using_namespace:
-      - clanguml::t00019
+      - "*.cc"
+    generate_template_argument_dependencies: false
+    using_namespace: clanguml::t00019
+    plantuml:
+      style:
+        instantiation: up
     include:
       namespaces:
         - clanguml::t00019

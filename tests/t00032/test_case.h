@@ -1,7 +1,7 @@
 /**
- * tests/t00032/test_case.cc
+ * tests/t00032/test_case.h
  *
- * Copyright (c) 2021-2022 Bartek Kryza <bkryza@gmail.com>
+ * Copyright (c) 2021-2024 Bartek Kryza <bkryza@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,41 +16,31 @@
  * limitations under the License.
  */
 
-TEST_CASE("t00032", "[test-case][class]")
+TEST_CASE("t00032")
 {
-    auto [config, db] = load_config("t00032");
+    using namespace clanguml::test;
 
-    auto diagram = config.diagrams["t00032_class"];
+    auto [config, db, diagram, model] =
+        CHECK_CLASS_MODEL("t00032", "t00032_class");
 
-    REQUIRE(diagram->name == "t00032_class");
+    CHECK_CLASS_DIAGRAM(*config, diagram, *model, [](const auto &src) {
+        REQUIRE(IsClass(src, "Base"));
+        REQUIRE(IsClass(src, "TBase"));
+        REQUIRE(IsClass(src, "A"));
+        REQUIRE(IsClass(src, "B"));
+        REQUIRE(IsClass(src, "C"));
+        REQUIRE(IsClass(src, "R"));
 
-    auto model = generate_class_diagram(db, diagram);
+        REQUIRE(IsClassTemplate(src, "Overload<T,L,Ts...>"));
 
-    REQUIRE(model->name() == "t00032_class");
-    REQUIRE(model->should_include("clanguml::t00032::A"));
-
-    auto puml = generate_class_puml(diagram, *model);
-    AliasMatcher _A(puml);
-
-    REQUIRE_THAT(puml, StartsWith("@startuml"));
-    REQUIRE_THAT(puml, EndsWith("@enduml\n"));
-
-    REQUIRE_THAT(puml, IsClass(_A("Base")));
-    REQUIRE_THAT(puml, IsClass(_A("TBase")));
-    REQUIRE_THAT(puml, IsClass(_A("A")));
-    REQUIRE_THAT(puml, IsClass(_A("B")));
-    REQUIRE_THAT(puml, IsClass(_A("C")));
-    REQUIRE_THAT(puml, IsClass(_A("R")));
-
-    REQUIRE_THAT(puml, IsClassTemplate("Overload", "T,L,Ts..."));
-
-    REQUIRE_THAT(puml, IsBaseClass(_A("Base"), _A("Overload<T,L,Ts...>")));
-    REQUIRE_THAT(
-        puml, IsBaseClass(_A("TBase"), _A("Overload<TBase,int,A,B,C>")));
-    REQUIRE_THAT(puml, IsBaseClass(_A("A"), _A("Overload<TBase,int,A,B,C>")));
-    REQUIRE_THAT(puml, IsBaseClass(_A("B"), _A("Overload<TBase,int,A,B,C>")));
-    REQUIRE_THAT(puml, IsBaseClass(_A("C"), _A("Overload<TBase,int,A,B,C>")));
-
-    save_puml(
-        "./" + config.output_directory() + "/" + diagram->name + ".puml", puml);
+        REQUIRE(IsBaseClass(src, "Base", "Overload<T,L,Ts...>"));
+        REQUIRE(IsBaseClass(src, "TBase", "Overload<TBase,int,A,B,C>"));
+        REQUIRE(IsBaseClass(src, "A", "Overload<TBase,int,A,B,C>"));
+        REQUIRE(IsBaseClass(src, "B", "Overload<TBase,int,A,B,C>"));
+        REQUIRE(IsBaseClass(src, "C", "Overload<TBase,int,A,B,C>"));
+        REQUIRE(!IsDependency(src, "Overload<TBase,int,A,B,C>", "TBase"));
+        REQUIRE(!IsDependency(src, "Overload<TBase,int,A,B,C>", "A"));
+        REQUIRE(!IsDependency(src, "Overload<TBase,int,A,B,C>", "B"));
+        REQUIRE(!IsDependency(src, "Overload<TBase,int,A,B,C>", "C"));
+    });
 }

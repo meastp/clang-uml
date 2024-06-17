@@ -1,22 +1,27 @@
-compilation_database_dir: ..
-output_directory: puml
+add_compile_flags:
+  - -fparse-all-comments
 diagrams:
   t20001_sequence:
     type: sequence
+    title: Basic sequence diagram example
     glob:
-      - ../../tests/t20001/t20001.cc
+      - t20001.cc
     include:
       namespaces:
         - clanguml::t20001
     exclude:
       namespaces:
         - clanguml::t20001::detail
-    using_namespace:
-      - clanguml::t20001
-    start_from:
+    using_namespace: clanguml::t20001
+    from:
       - function: "clanguml::t20001::tmain()"
     plantuml:
       before:
-        - "' t20001 test sequence diagram"
+        - "' t20001 test diagram of type {{ diagram.type }}"
       after:
-        - 'note over "tmain()": Main test function'
+        - '{% set e=element("clanguml::t20001::tmain()") %} note over {{ e.alias) }}: Main test function'
+    mermaid:
+      before:
+        - "%% t20001 test diagram of type {{ diagram.type }}"
+      after:
+        - '{% set e=element("clanguml::t20001::tmain()") %} Note over {{ e.alias) }}: Main test function'

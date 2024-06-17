@@ -1,20 +1,95 @@
 compilation_database_dir: debug
 output_directory: output
-
 diagrams:
   include_test:
-    type: class
+    type: include
+    relative_to: ../../../src
     glob:
       - src/**/*.cc
       - src/**/*.h
     include:
       paths:
-        - dir1
-        - dir2/dir1
-        - file1.h
+        - class_d*/
+        - common
+        - util/*.h
+        - util/*.cc
+        - main.cc
     exclude:
       paths:
-        - dir1/file9.h
-        - dir2/dir1/file9.h
-        - dir1/dir3
-        - file9.h
+        - sequence_diagram
+        - util/error.h
+  method_type_include_test:
+    type: class
+    include:
+      method_types:
+        - constructor
+        - operator
+  method_type_exclude_test:
+    type: class
+    exclude:
+      method_types:
+        - deleted
+        - destructor
+  namespace_test:
+    type: class
+    include:
+      namespaces:
+        - ns1::ns2
+    exclude:
+      namespaces:
+        - ns1::ns2::detail
+  regex_elements_test:
+    type: class
+    include:
+      elements:
+        - ns1::ClassA
+        - r: 'ns1::ns2::Class.+'
+        - r: 'ns1::.+::ns3::.+'
+    exclude:
+      elements:
+        - ns1::ns2::ClassZ
+  regex_namespace_test:
+    type: class
+    include:
+      namespaces:
+        - ns1::ns2
+        - r: '.*interface.*'
+    exclude:
+      namespaces:
+        - r: '.*detail.*'
+  regex_subclasses_test:
+    type: class
+    include:
+      subclasses:
+        - r: 'ns1::ns2::Base[A|B]'
+  regex_parents_test:
+    type: class
+    include:
+      parents:
+        - r: 'ns1::ns2::.+[1|2]'
+  regex_specializations_test:
+    type: class
+    include:
+      specializations:
+        - r: 'A<int,.+>'
+  regex_context_test:
+    type: class
+    include:
+      context:
+        - r: '[A|B]'
+  regex_dependencies_test:
+    type: class
+    include:
+      dependencies:
+        - r: 'A21|B1'
+  regex_dependants_test:
+    type: class
+    include:
+      dependants:
+        - r: 'A|B'
+  callee_type_include_test:
+    type: sequence
+    include:
+      callee_types:
+        - function
+        - function_template

@@ -1,0 +1,11 @@
+diagrams:
+  t20005_sequence:
+    type: sequence
+    glob:
+      - t20005.cc
+    include:
+      namespaces:
+        - clanguml::t20005
+    using_namespace: clanguml::t20005
+    from:
+      - function: "clanguml::t20005::C<T>::c(T)"

@@ -1,7 +1,7 @@
 /**
- * src/package_diagram/model/diagram.cc
+ * @file src/package_diagram/model/diagram.cc
  *
- * Copyright (c) 2021-2022 Bartek Kryza <bkryza@gmail.com>
+ * Copyright (c) 2021-2024 Bartek Kryza <bkryza@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,61 +28,54 @@ common::model::diagram_t diagram::type() const
     return common::model::diagram_t::kPackage;
 }
 
-const std::vector<type_safe::object_ref<const common::model::package>> &
+const common::reference_vector<clanguml::common::model::package> &
 diagram::packages() const
 {
-    return packages_;
+    return element_view<package>::view();
 }
 
-void diagram::add_package(std::unique_ptr<common::model::package> &&p)
-{
-    LOG_DBG("Adding package: {}, {}", p->name(), p->full_name(true));
-
-    auto ns = p->get_relative_namespace();
-
-    packages_.emplace_back(*p);
-
-    add_element(ns, std::move(p));
-}
-
-type_safe::optional_ref<const common::model::package> diagram::get_package(
-    const std::string &name) const
-{
-    for (const auto &p : packages_) {
-        auto p_full_name = p.get().full_name(false);
-        if (p_full_name == name) {
-            return {p};
-        }
-    }
-
-    return type_safe::nullopt;
-}
-
-type_safe::optional_ref<const common::model::diagram_element> diagram::get(
+common::optional_ref<clanguml::common::model::diagram_element> diagram::get(
     const std::string &full_name) const
 {
-    return get_package(full_name);
+    return find<package>(full_name);
 }
 
-std::string diagram::to_alias(const std::string &full_name) const
+common::optional_ref<clanguml::common::model::diagram_element> diagram::get(
+    const eid_t id) const
 {
-    LOG_DBG("Looking for alias for {}", full_name);
-
-    auto path = common::model::namespace_{full_name};
-
-    if (path.is_empty())
-        throw error::uml_alias_missing(
-            fmt::format("Missing alias for '{}'", path.to_string()));
-
-    auto package = get_element<common::model::package>(path);
-
-    if (!package)
-        throw error::uml_alias_missing(
-            fmt::format("Missing alias for '{}'", path.to_string()));
-
-    return package.value().alias();
+    return find<package>(id);
 }
+
+std::string diagram::to_alias(const eid_t id) const
+{
+    LOG_DBG("Looking for alias for {}", id);
+
+    auto p = find<package>(id);
+    if (p.has_value() && p.value().id() == id)
+        return p.value().alias();
+
+    return {};
 }
+
+inja::json diagram::context() const
+{
+    inja::json ctx;
+    ctx["name"] = name();
+    ctx["type"] = "package";
+
+    inja::json::array_t elements{};
+
+    for (const auto &p : packages()) {
+        elements.emplace_back(p.get().context());
+    }
+
+    ctx["elements"] = elements;
+
+    return ctx;
+}
+
+bool diagram::is_empty() const { return element_view<package>::is_empty(); }
+} // namespace clanguml::package_diagram::model
 
 namespace clanguml::common::model {
 template <>

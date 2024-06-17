@@ -1,7 +1,7 @@
 /**
- * tests/t00017/test_case.cc
+ * tests/t00017/test_case.h
  *
- * Copyright (c) 2021-2022 Bartek Kryza <bkryza@gmail.com>
+ * Copyright (c) 2021-2024 Bartek Kryza <bkryza@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,56 +16,54 @@
  * limitations under the License.
  */
 
-TEST_CASE("t00017", "[test-case][class]")
+TEST_CASE("t00017")
 {
-    auto [config, db] = load_config("t00017");
+    using namespace clanguml::test;
 
-    auto diagram = config.diagrams["t00017_class"];
+    auto [config, db, diagram, model] =
+        CHECK_CLASS_MODEL("t00017", "t00017_class");
 
-    REQUIRE(diagram->name == "t00017_class");
+    CHECK_CLASS_DIAGRAM(
+        *config, diagram, *model,
+        [](const auto &src) {
+            REQUIRE(IsClass(src, "A"));
+            REQUIRE(IsClass(src, "B"));
+            REQUIRE(IsClass(src, "C"));
+            REQUIRE(IsClass(src, "D"));
+            REQUIRE(IsClass(src, "E"));
+            REQUIRE(IsClass(src, "F"));
+            REQUIRE(IsClass(src, "G"));
+            REQUIRE(IsClass(src, "H"));
+            REQUIRE(IsClass(src, "I"));
+            REQUIRE(IsClass(src, "J"));
+            REQUIRE(IsClass(src, "K"));
+            REQUIRE(IsClass(src, "R"));
 
-    auto model = generate_class_diagram(db, diagram);
+            REQUIRE(IsField<Private>(src, "R", "some_int", "int"));
+            REQUIRE((IsField<Private>(src, "R", "some_int_pointer", "int *")));
+            REQUIRE((IsField<Private>(
+                src, "R", "some_int_pointer_pointer", "int **")));
 
-    REQUIRE(model->name() == "t00017_class");
-
-    auto puml = generate_class_puml(diagram, *model);
-    AliasMatcher _A(puml);
-
-    REQUIRE_THAT(puml, StartsWith("@startuml"));
-    REQUIRE_THAT(puml, EndsWith("@enduml\n"));
-    REQUIRE_THAT(puml, IsClass(_A("A")));
-    REQUIRE_THAT(puml, IsClass(_A("B")));
-    REQUIRE_THAT(puml, IsClass(_A("C")));
-    REQUIRE_THAT(puml, IsClass(_A("D")));
-    REQUIRE_THAT(puml, IsClass(_A("E")));
-    REQUIRE_THAT(puml, IsClass(_A("F")));
-    REQUIRE_THAT(puml, IsClass(_A("G")));
-    REQUIRE_THAT(puml, IsClass(_A("H")));
-    REQUIRE_THAT(puml, IsClass(_A("I")));
-    REQUIRE_THAT(puml, IsClass(_A("J")));
-    REQUIRE_THAT(puml, IsClass(_A("K")));
-    REQUIRE_THAT(puml, IsClass(_A("R")));
-
-    REQUIRE_THAT(puml, (IsField<Private>("some_int", "int")));
-    REQUIRE_THAT(puml, (IsField<Private>("some_int_pointer", "int*")));
-    REQUIRE_THAT(puml, (IsField<Private>("some_int_pointer_pointer", "int**")));
-
-    // Relationship members should not be rendered as part of this testcase
-    REQUIRE_THAT(puml, !(IsField<Private>("a", _A("A"))));
-    REQUIRE_THAT(puml, !(IsField<Private>("b", _A("B"))));
-
-    REQUIRE_THAT(puml, IsAggregation(_A("R"), _A("A"), "-a"));
-    REQUIRE_THAT(puml, IsAssociation(_A("R"), _A("B"), "-b"));
-    REQUIRE_THAT(puml, IsAssociation(_A("R"), _A("C"), "-c"));
-    REQUIRE_THAT(puml, IsAssociation(_A("R"), _A("D"), "-d"));
-    REQUIRE_THAT(puml, IsAssociation(_A("R"), _A("E"), "-e"));
-    REQUIRE_THAT(puml, IsAggregation(_A("R"), _A("F"), "-f"));
-    REQUIRE_THAT(puml, IsAssociation(_A("R"), _A("G"), "-g"));
-    REQUIRE_THAT(puml, IsAssociation(_A("R"), _A("H"), "-h"));
-    REQUIRE_THAT(puml, IsAssociation(_A("R"), _A("I"), "-i"));
-    REQUIRE_THAT(puml, IsAssociation(_A("R"), _A("J"), "-j"));
-    REQUIRE_THAT(puml, IsAssociation(_A("R"), _A("K"), "-k"));
-
-    save_puml(
-        "./" + config.output_directory() + "/" + diagram->name + ".puml", puml);
+            REQUIRE(IsAggregation<Private>(src, "R", "A", "a"));
+            REQUIRE(IsAssociation<Private>(src, "R", "B", "b"));
+            REQUIRE(IsAssociation<Private>(src, "R", "C", "c"));
+            REQUIRE(IsAssociation<Private>(src, "R", "D", "d"));
+            REQUIRE(IsAssociation<Private>(src, "R", "E", "e"));
+            REQUIRE(IsAggregation<Private>(src, "R", "F", "f"));
+            REQUIRE(IsAssociation<Private>(src, "R", "G", "g"));
+            REQUIRE(IsAssociation<Private>(src, "R", "H", "h"));
+            REQUIRE(IsAssociation<Private>(src, "R", "I", "i"));
+            REQUIRE(IsAssociation<Private>(src, "R", "J", "j"));
+            REQUIRE(IsAssociation<Private>(src, "R", "K", "k"));
+        },
+        [](const plantuml_t &src) {
+            // Relationship members should not be rendered as part of this
+            // testcase
+            REQUIRE(!IsField<Private>(src, "R", "a", "A"));
+            REQUIRE(!IsField<Private>(src, "R", "b", "B"));
+        },
+        [](const mermaid_t &src) {
+            REQUIRE(!IsField<Private>(src, "R", "a", "A"));
+            REQUIRE(!IsField<Private>(src, "R", "b", "B"));
+        });
 }

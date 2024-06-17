@@ -1,0 +1,9 @@
+diagrams:
+  t30011_package:
+    type: package
+    package_type: directory
+    glob:
+      - t30011.c
+    include:
+      paths:
+        - .

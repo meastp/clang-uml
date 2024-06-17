@@ -1,7 +1,7 @@
 /**
  * tests/t00014/test_case.h
  *
- * Copyright (c) 2021-2022 Bartek Kryza <bkryza@gmail.com>
+ * Copyright (c) 2021-2024 Bartek Kryza <bkryza@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,100 +16,107 @@
  * limitations under the License.
  */
 
-TEST_CASE("t00014", "[test-case][class]")
+TEST_CASE("t00014")
 {
-    auto [config, db] = load_config("t00014");
+    using namespace clanguml::test;
 
-    auto diagram = config.diagrams["t00014_class"];
+    auto [config, db, diagram, model] =
+        CHECK_CLASS_MODEL("t00014", "t00014_class");
 
-    REQUIRE(diagram->name == "t00014_class");
+    CHECK_CLASS_DIAGRAM(*config, diagram, *model, [](const auto &src) {
+        REQUIRE(!src.contains("type-parameter-"));
 
-    auto model = generate_class_diagram(db, diagram);
+        REQUIRE(IsClassTemplate(src, "A<T,P>"));
+        REQUIRE(IsClassTemplate(src, "A<T,std::string>"));
+        REQUIRE(IsClassTemplate(src, "A<T,std::unique_ptr<std::string>>"));
+        REQUIRE(IsClassTemplate(src, "A<double,T>"));
+        // TODO: Figure out how to handle the same templates with different
+        // template
+        //       parameter names
+        //    REQUIRE(puml, !IsClassTemplate("A", "long,U"));
+        REQUIRE(IsClassTemplate(src, "A<long,T>"));
+        REQUIRE(IsClassTemplate(src, "A<long,bool>"));
+        REQUIRE(IsClassTemplate(src, "A<double,bool>"));
+        REQUIRE(IsClassTemplate(src, "A<long,float>"));
+        REQUIRE(IsClassTemplate(src, "A<double,float>"));
+        REQUIRE(IsClassTemplate(src, "A<bool,std::string>"));
+        REQUIRE(IsClassTemplate(src, "A<std::string,std::string>"));
+        REQUIRE(IsClassTemplate(src, "A<char,std::string>"));
+        REQUIRE(IsClass(src, "B"));
+        REQUIRE(IsClassTemplate(src, "R<T>"));
 
-    REQUIRE(model->name() == "t00014_class");
-    REQUIRE(model->should_include("clanguml::t00014::B"));
+        REQUIRE(IsField<Private>(src, "R<T>", "bapair", "PairPairBA<bool>"));
+        REQUIRE(IsField<Private>(src, "R<T>", "abool", "APtr<bool>"));
+        REQUIRE(
+            IsField<Private>(src, "R<T>", "aboolfloat", "AAPtr<bool,float>"));
+        REQUIRE(IsField<Private>(src, "R<T>", "afloat", "ASharedPtr<float>"));
+        REQUIRE(
+            IsField<Private>(src, "R<T>", "boolstring", "A<bool,std::string>"));
+        REQUIRE(
+            IsField<Private>(src, "R<T>", "floatstring", "AStringPtr<float>"));
+        REQUIRE(IsField<Private>(src, "R<T>", "atfloat", "AAPtr<T,float>"));
 
-    auto puml = generate_class_puml(diagram, *model);
-    AliasMatcher _A(puml);
+        REQUIRE(IsField<Private>(src, "R<T>", "intstring", "AIntString"));
+        REQUIRE(IsField<Private>(src, "R<T>", "stringstring", "AStringString"));
+        REQUIRE(
+            IsField<Private>(src, "R<T>", "bstringstring", "BStringString"));
 
-    REQUIRE_THAT(puml, StartsWith("@startuml"));
-    REQUIRE_THAT(puml, EndsWith("@enduml\n"));
-    REQUIRE_THAT(puml, IsClassTemplate("A", "T,P"));
-    REQUIRE_THAT(puml, IsClassTemplate("A", "T,std::string"));
-    REQUIRE_THAT(puml, IsClassTemplate("A", "T,std::unique_ptr<std::string>"));
-    REQUIRE_THAT(puml, IsClassTemplate("A", "double,T"));
-    REQUIRE_THAT(puml, !IsClassTemplate("A", "long,U"));
-    REQUIRE_THAT(puml, IsClassTemplate("A", "long,T"));
-    REQUIRE_THAT(puml, IsClassTemplate("A", "long,bool"));
-    REQUIRE_THAT(puml, IsClassTemplate("A", "double,bool"));
-    REQUIRE_THAT(puml, IsClassTemplate("A", "long,float"));
-    REQUIRE_THAT(puml, IsClassTemplate("A", "double,float"));
-    REQUIRE_THAT(puml, IsClassTemplate("A", "bool,std::string"));
-    REQUIRE_THAT(puml, IsClassTemplate("A", "char,std::string"));
-    REQUIRE_THAT(puml, IsClass(_A("B")));
+        REQUIRE(IsField<Protected>(src, "R<T>", "bs", "BVector"));
 
-    REQUIRE_THAT(puml, IsField<Private>("bapair", "PairPairBA<bool>"));
-    REQUIRE_THAT(puml, IsField<Private>("abool", "APtr<bool>"));
-    REQUIRE_THAT(puml, IsField<Private>("aboolfloat", "AAPtr<bool,float>"));
-    REQUIRE_THAT(puml, IsField<Private>("afloat", "ASharedPtr<float>"));
-    REQUIRE_THAT(puml, IsField<Private>("boolstring", "A<bool,std::string>"));
-    REQUIRE_THAT(puml, IsField<Private>("floatstring", "AStringPtr<float>"));
-    REQUIRE_THAT(puml, IsField<Private>("intstring", "AIntString"));
-    REQUIRE_THAT(puml, IsField<Private>("stringstring", "AStringString"));
-    REQUIRE_THAT(puml, IsField<Private>("bstringstring", "BStringString"));
+        REQUIRE(
+            IsField<Public>(src, "R<T>", "cb", "SimpleCallback<ACharString>"));
+#if LLVM_VERSION_MAJOR >= 16
+        REQUIRE(IsField<Public>(
+            src, "R<T>", "gcb", "GenericCallback<AWCharString>"));
+#else
+        REQUIRE(
+            IsField<Public>(src, "R<T>", "gcb", "GenericCallback<R::AWCharString>"));
+#endif
+        REQUIRE(IsField<Public>(src, "R<T>", "vcb", "VoidCallback"));
 
-    REQUIRE_THAT(puml, IsField<Protected>("bs", "BVector"));
+        REQUIRE(
+            !IsClassTemplate(src, "std::std::function<void(T...,int),int)>"));
 
-    REQUIRE_THAT(puml, IsField<Public>("cb", "SimpleCallback<ACharString>"));
-    REQUIRE_THAT(
-        puml, IsField<Public>("gcb", "GenericCallback<R::AWCharString>"));
-    REQUIRE_THAT(puml, IsField<Public>("vcb", "VoidCallback"));
+        REQUIRE(IsInstantiation(src, "A<T,P>", "A<T,std::string>"));
+        REQUIRE(IsInstantiation(src, "A<long,T>", "A<long,float>"));
+        REQUIRE(IsInstantiation(src, "A<long,T>", "A<long,bool>"));
 
-    REQUIRE_THAT(
-        puml, !IsClassTemplate("std::std::function", "void(T...,int),int)"));
+        REQUIRE(IsInstantiation(src, "A<T,P>", "A<long,T>"));
+        //    REQUIRE(puml, !IsInstantiation(_A("A<long,T>"),
+        //    _A("A<long,U>")));
+        REQUIRE(IsInstantiation(src, "A<double,T>", "A<double,float>"));
+        REQUIRE(IsInstantiation(src, "A<double,T>", "A<double,bool>"));
+        REQUIRE(IsInstantiation(src, "A<T,P>", "A<double,T>"));
+        REQUIRE(IsInstantiation(src, "A<T,P>", "A<T,std::string>"));
+        REQUIRE(
+            IsInstantiation(src, "A<T,std::string>", "A<bool,std::string>"));
+        REQUIRE(
+            IsInstantiation(src, "A<T,std::string>", "A<char,std::string>"));
+        REQUIRE(
+            IsInstantiation(src, "A<T,std::string>", "A<wchar_t,std::string>"));
 
-    REQUIRE_THAT(puml, IsInstantiation(_A("A<T,P>"), _A("A<T,std::string>")));
-    REQUIRE_THAT(puml, IsInstantiation(_A("A<long,T>"), _A("A<long,float>")));
-    REQUIRE_THAT(puml, IsInstantiation(_A("A<long,T>"), _A("A<long,bool>")));
+        REQUIRE(IsInstantiation(src, "A<T,std::unique_ptr<std::string>>",
+            "A<float,std::unique_ptr<std::string>>"));
+        REQUIRE(IsInstantiation(
+            src, "A<T,P>", "A<T,std::unique_ptr<std::string>>"));
 
-    REQUIRE_THAT(puml, IsInstantiation(_A("A<T,P>"), _A("A<long,T>")));
-    REQUIRE_THAT(puml, !IsInstantiation(_A("A<long,T>"), _A("A<long,U>")));
-    REQUIRE_THAT(
-        puml, IsInstantiation(_A("A<double,T>"), _A("A<double,float>")));
-    REQUIRE_THAT(
-        puml, IsInstantiation(_A("A<double,T>"), _A("A<double,bool>")));
-    REQUIRE_THAT(puml, IsInstantiation(_A("A<T,P>"), _A("A<double,T>")));
-    REQUIRE_THAT(puml, IsInstantiation(_A("A<T,P>"), _A("A<T,std::string>")));
-    REQUIRE_THAT(puml,
-        IsInstantiation(_A("A<T,std::string>"), _A("A<bool,std::string>")));
-    REQUIRE_THAT(puml,
-        IsInstantiation(_A("A<T,std::string>"), _A("A<char,std::string>")));
-    REQUIRE_THAT(puml,
-        IsInstantiation(_A("A<T,std::string>"), _A("A<wchar_t,std::string>")));
-
-    REQUIRE_THAT(puml,
-        IsInstantiation(_A("A<T,std::unique_ptr<std::string>>"),
-            _A("A<float,std::unique_ptr<std::string>>")));
-    REQUIRE_THAT(puml,
-        IsInstantiation(_A("A<T,P>"), _A("A<T,std::unique_ptr<std::string>>")));
-
-    REQUIRE_THAT(puml, IsAggregation(_A("R"), _A("B"), "+vps"));
-    REQUIRE_THAT(puml, IsAggregation(_A("R"), _A("B"), "-bapair"));
-    REQUIRE_THAT(
-        puml, IsAggregation(_A("R"), _A("A<long,float>"), "-aboolfloat"));
-    REQUIRE_THAT(puml, IsAggregation(_A("R"), _A("A<long,bool>"), "-bapair"));
-    REQUIRE_THAT(
-        puml, IsAggregation(_A("R"), _A("A<double,bool>"), "-aboolfloat"));
-    REQUIRE_THAT(
-        puml, IsAssociation(_A("R"), _A("A<double,float>"), "-afloat"));
-    REQUIRE_THAT(
-        puml, IsAggregation(_A("R"), _A("A<bool,std::string>"), "-boolstring"));
-    REQUIRE_THAT(puml,
-        IsAggregation(_A("R"), _A("A<float,std::unique_ptr<std::string>>"),
-            "-floatstring"));
-    REQUIRE_THAT(puml, IsDependency(_A("R"), _A("A<char,std::string>")));
-    REQUIRE_THAT(puml, IsDependency(_A("R"), _A("A<wchar_t,std::string>")));
-
-    save_puml(
-        "./" + config.output_directory() + "/" + diagram->name + ".puml", puml);
+        REQUIRE(IsAggregation<Public>(src, "R<T>", "B", "vps"));
+        REQUIRE(IsAggregation<Private>(src, "R<T>", "B", "bapair"));
+        REQUIRE(
+            IsAggregation<Private>(src, "R<T>", "A<long,float>", "aboolfloat"));
+        REQUIRE(IsAggregation<Private>(src, "R<T>", "A<long,bool>", "bapair"));
+        REQUIRE(IsAggregation<Private>(
+            src, "R<T>", "A<double,bool>", "aboolfloat"));
+        REQUIRE(IsAggregation<Private>(src, "R<T>", "A<double,T>", "atfloat"));
+        REQUIRE(
+            IsAggregation<Private>(src, "R<T>", "A<long,float>", "atfloat"));
+        REQUIRE(
+            IsAssociation<Private>(src, "R<T>", "A<double,float>", "afloat"));
+        REQUIRE(IsAggregation<Private>(
+            src, "R<T>", "A<bool,std::string>", "boolstring"));
+        REQUIRE(IsAggregation<Private>(src, "R<T>",
+            "A<float,std::unique_ptr<std::string>>", "floatstring"));
+        REQUIRE(IsDependency(src, "R<T>", "A<char,std::string>"));
+        REQUIRE(IsDependency(src, "R<T>", "A<wchar_t,std::string>"));
+    });
 }

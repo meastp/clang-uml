@@ -1,7 +1,7 @@
 /**
- * tests/t40001/test_case.cc
+ * tests/t40001/test_case.h
  *
- * Copyright (c) 2021-2022 Bartek Kryza <bkryza@gmail.com>
+ * Copyright (c) 2021-2024 Bartek Kryza <bkryza@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,38 +16,30 @@
  * limitations under the License.
  */
 
-TEST_CASE("t40001", "[test-case][package]")
+TEST_CASE("t40001")
 {
-    auto [config, db] = load_config("t40001");
+    using namespace clanguml::test;
 
-    auto diagram = config.diagrams["t40001_include"];
+    auto [config, db, diagram, model] =
+        CHECK_INCLUDE_MODEL("t40001", "t40001_include");
 
-    REQUIRE(diagram->name == "t40001_include");
+    CHECK_INCLUDE_DIAGRAM(*config, diagram, *model, [](const auto &src) {
+        REQUIRE(HasTitle(src, "Basic include diagram example"));
 
-    auto model = generate_include_diagram(db, diagram);
+        REQUIRE(IsFolder(src, "include/lib1"));
+        REQUIRE(IsFile(src, "include/lib1/lib1.h"));
+        REQUIRE(IsFile(src, "src/t40001.cc"));
+        REQUIRE(IsFile(src, "include/t40001_include1.h"));
 
-    REQUIRE(model->name() == "t40001_include");
+        REQUIRE(IsSystemHeader(src, "string"));
+        REQUIRE(IsSystemHeader(src, "yaml-cpp/yaml.h"));
 
-    auto puml = generate_include_puml(diagram, *model);
+        REQUIRE(IsHeaderDependency(
+            src, "src/t40001.cc", "include/t40001_include1.h"));
+        REQUIRE(IsHeaderDependency(
+            src, "include/t40001_include1.h", "include/lib1/lib1.h"));
 
-    AliasMatcher _A(puml);
-
-    REQUIRE_THAT(puml, StartsWith("@startuml"));
-    REQUIRE_THAT(puml, EndsWith("@enduml\n"));
-
-    REQUIRE_THAT(puml, IsFolder("lib1"));
-    REQUIRE_THAT(puml, IsFile("lib1.h"));
-    REQUIRE_THAT(puml, IsFile("t40001.cc"));
-    REQUIRE_THAT(puml, IsFile("t40001_include1.h"));
-
-    REQUIRE_THAT(puml, IsFile("string"));
-    REQUIRE_THAT(puml, IsFile("cppast/cpp_preprocessor.hpp"));
-
-    REQUIRE_THAT(puml, IsAssociation(_A("t40001.cc"), _A("t40001_include1.h")));
-    REQUIRE_THAT(puml, IsAssociation(_A("t40001_include1.h"), _A("lib1.h")));
-
-    REQUIRE_THAT(puml, IsDependency(_A("t40001_include1.h"), _A("string")));
-
-    save_puml(
-        "./" + config.output_directory() + "/" + diagram->name + ".puml", puml);
+        REQUIRE(IsSystemHeaderDependency(
+            src, "include/t40001_include1.h", "string"));
+    });
 }

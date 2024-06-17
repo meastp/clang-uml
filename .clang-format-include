@@ -6,4 +6,4 @@
 + src/**/*.h
 + tests/**/*.cc
 + tests/**/*.h
-- tests/catch.h
++ tests/**/*.cppm

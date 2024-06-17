@@ -1,8 +1,7 @@
 namespace clanguml::t00043 {
 
 namespace dependants {
-struct A {
-};
+struct A { };
 
 struct B {
     void b(A *a) { }
@@ -25,17 +24,22 @@ struct E {
     void e(D *d) { }
 };
 
-struct F {
+struct EE {
+    void ee(E *e) { }
 };
+
+struct EEE {
+    void eee(EE *e) { }
+};
+
+struct F { };
 } // namespace dependants
 
 namespace dependencies {
 
-struct G {
-};
+struct G { };
 
-struct GG {
-};
+struct GG { };
 
 struct H {
     void h(G *g) { }
@@ -50,8 +54,18 @@ struct I {
     void i(H *h) { }
 };
 
+struct II;
+struct III {
+    void iii(II *i) { }
+};
+
+struct II {
+    void ii() { }
+};
+
 struct J {
     void i(I *i) { }
+    void ii(II *ii) { }
 };
 
 } // namespace dependencies

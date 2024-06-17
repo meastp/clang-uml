@@ -1,0 +1,14 @@
+diagrams:
+  t00055_class:
+    type: class
+    glob:
+      - t00055.cc
+    include:
+      namespaces:
+        - clanguml::t00055
+    using_namespace: clanguml::t00055
+    layout:
+      A:
+        - row: [C, E, G, I]
+      B:
+        - column: [D, F, H, J]

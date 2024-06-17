@@ -1,7 +1,7 @@
 /**
- * tests/t00044/test_case.cc
+ * tests/t00044/test_case.h
  *
- * Copyright (c) 2021-2022 Bartek Kryza <bkryza@gmail.com>
+ * Copyright (c) 2021-2024 Bartek Kryza <bkryza@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,28 +16,35 @@
  * limitations under the License.
  */
 
-TEST_CASE("t00044", "[test-case][class]")
+TEST_CASE("t00044")
 {
-    auto [config, db] = load_config("t00044");
+    using namespace clanguml::test;
 
-    auto diagram = config.diagrams["t00044_class"];
+    auto [config, db, diagram, model] =
+        CHECK_CLASS_MODEL("t00044", "t00044_class");
 
-    REQUIRE(diagram->name == "t00044_class");
-    REQUIRE(diagram->generate_packages() == true);
+    CHECK_CLASS_DIAGRAM(*config, diagram, *model, [](const auto &src) {
+        REQUIRE(!src.contains("type-parameter-"));
 
-    auto model = generate_class_diagram(db, diagram);
+        REQUIRE(IsClassTemplate(src, "sink<T>"));
+        REQUIRE(IsClassTemplate(src, "signal_handler<T,A>"));
 
-    REQUIRE(model->name() == "t00044_class");
+        REQUIRE(IsClassTemplate(src, "signal_handler<Ret(Args...),A>"));
+        REQUIRE(IsClassTemplate(src, "signal_handler<void(int),bool>"));
 
-    auto puml = generate_class_puml(diagram, *model);
-    AliasMatcher _A(puml);
+        REQUIRE(IsClassTemplate(src, "sink<signal_handler<Ret(Args...),A>>"));
 
-    REQUIRE_THAT(puml, StartsWith("@startuml"));
-    REQUIRE_THAT(puml, EndsWith("@enduml\n"));
+        REQUIRE(IsInstantiation(
+            src, "sink<T>", "sink<signal_handler<Ret(Args...),A>>"));
 
-    // Check dependants filter<void(int), bool>
-    REQUIRE_THAT(puml, IsClassTemplate("signal_handler", "Ret,Args...,A"));
+        REQUIRE(IsInstantiation(src, "sink<signal_handler<Ret(Args...),A>>",
+            "sink<signal_handler<void(int),bool>>"));
 
-    save_puml(
-        "./" + config.output_directory() + "/" + diagram->name + ".puml", puml);
+        REQUIRE(IsClassTemplate(src, "signal_handler<T,A>"));
+        REQUIRE(IsInstantiation(
+            src, "signal_handler<T,A>", "signal_handler<Ret(Args...),A>"));
+
+        REQUIRE(IsInstantiation(src, "signal_handler<Ret(Args...),A>",
+            "signal_handler<void(int),bool>"));
+    });
 }

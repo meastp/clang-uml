@@ -1,7 +1,7 @@
 /**
- * tests/t00025/test_case.cc
+ * tests/t00025/test_case.h
  *
- * Copyright (c) 2021-2022 Bartek Kryza <bkryza@gmail.com>
+ * Copyright (c) 2021-2024 Bartek Kryza <bkryza@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,38 +16,29 @@
  * limitations under the License.
  */
 
-TEST_CASE("t00025", "[test-case][class]")
+TEST_CASE("t00025")
 {
-    auto [config, db] = load_config("t00025");
+    using namespace clanguml::test;
 
-    auto diagram = config.diagrams["t00025_class"];
+    auto [config, db, diagram, model] =
+        CHECK_CLASS_MODEL("t00025", "t00025_class");
 
-    REQUIRE(diagram->name == "t00025_class");
+    CHECK_CLASS_DIAGRAM(*config, diagram, *model, [](const auto &src) {
+        REQUIRE(IsClass(src, "Target1"));
+        REQUIRE(IsClass(src, "Target2"));
+        REQUIRE(IsClassTemplate(src, "Proxy<T>"));
+        REQUIRE(IsDependency(src, "Proxy<Target1>", "Target1"));
+        REQUIRE(IsDependency(src, "Proxy<Target2>", "Target2"));
 
-    auto model = generate_class_diagram(db, diagram);
-
-    REQUIRE(model->name() == "t00025_class");
-    REQUIRE(model->should_include("clanguml::t00025::A"));
-
-    auto puml = generate_class_puml(diagram, *model);
-    AliasMatcher _A(puml);
-
-    REQUIRE_THAT(puml, StartsWith("@startuml"));
-    REQUIRE_THAT(puml, EndsWith("@enduml\n"));
-    REQUIRE_THAT(puml, IsClass(_A("Target1")));
-    REQUIRE_THAT(puml, IsClass(_A("Target2")));
-    REQUIRE_THAT(puml, IsClassTemplate("Proxy", "T"));
-    REQUIRE_THAT(puml, IsInstantiation(_A("Proxy<T>"), _A("Proxy<Target1>")));
-    REQUIRE_THAT(puml, IsInstantiation(_A("Proxy<T>"), _A("Proxy<Target2>")));
-    REQUIRE_THAT(puml,
-        IsAggregation(_A("ProxyHolder"), _A("Proxy<Target1>"), "+proxy1"));
-    REQUIRE_THAT(puml,
-        IsAggregation(_A("ProxyHolder"), _A("Proxy<Target2>"), "+proxy2"));
-    REQUIRE_THAT(
-        puml, !IsAggregation(_A("ProxyHolder"), _A("Target1"), "+proxy1"));
-    REQUIRE_THAT(
-        puml, !IsAggregation(_A("ProxyHolder"), _A("Target2"), "+proxy2"));
-
-    save_puml(
-        "./" + config.output_directory() + "/" + diagram->name + ".puml", puml);
+        REQUIRE(IsInstantiation(src, "Proxy<T>", "Proxy<Target1>"));
+        REQUIRE(IsInstantiation(src, "Proxy<T>", "Proxy<Target2>"));
+        REQUIRE(IsAggregation<Public>(
+            src, "ProxyHolder", "Proxy<Target1>", "proxy1"));
+        REQUIRE(IsAggregation<Public>(
+            src, "ProxyHolder", "Proxy<Target2>", "proxy2"));
+        REQUIRE(
+            !IsAggregation<Public>(src, "ProxyHolder", "Target1", "proxy1"));
+        REQUIRE(
+            !IsAggregation<Public>(src, "ProxyHolder", "Target2", "proxy2"));
+    });
 }

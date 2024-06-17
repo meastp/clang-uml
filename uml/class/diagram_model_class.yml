@@ -1,0 +1,20 @@
+type: class
+title: Diagram model
+include_relations_also_as_members: false
+generate_method_arguments: none
+glob:
+  - src/common/model/*.cc
+  - src/class_diagram/model/*.cc
+  - src/sequence_diagram/model/*.cc
+  - src/package_diagram/model/*.cc
+include:
+  namespaces:
+    - clanguml::common::model
+    - clanguml::class_diagram::model
+    - clanguml::sequence_diagram::model
+    - clanguml::package_diagram::model
+exclude:
+  relationships:
+    - dependency
+using_namespace:
+  - clanguml

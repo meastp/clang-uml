@@ -1,7 +1,7 @@
 /**
- * tests/t00009/test_case.cc
+ * tests/t00009/test_case.h
  *
- * Copyright (c) 2021-2022 Bartek Kryza <bkryza@gmail.com>
+ * Copyright (c) 2021-2024 Bartek Kryza <bkryza@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,41 +16,31 @@
  * limitations under the License.
  */
 
-TEST_CASE("t00009", "[test-case][class]")
+TEST_CASE("t00009")
 {
-    auto [config, db] = load_config("t00009");
+    using namespace clanguml::test;
 
-    auto diagram = config.diagrams["t00009_class"];
+    auto [config, db, diagram, model] =
+        CHECK_CLASS_MODEL("t00009", "t00009_class");
 
-    REQUIRE(diagram->name == "t00009_class");
+    CHECK_CLASS_DIAGRAM(*config, diagram, *model, [](const auto &src) {
+        REQUIRE(IsClassTemplate(src, "A<T>"));
+        REQUIRE(IsClass(src, "B"));
 
-    auto model = generate_class_diagram(db, diagram);
+        REQUIRE(IsField<Public>(src, "A<T>", "value", "T"));
+        REQUIRE(IsField<Public>(src, "B", "aint", "A<int>"));
+        REQUIRE(IsField<Public>(src, "B", "astring", "A<std::string> *"));
+        REQUIRE(IsField<Public>(
+            src, "B", "avector", "A<std::vector<std::string>> &"));
 
-    REQUIRE(model->name() == "t00009_class");
+        REQUIRE(IsInstantiation(src, "A<T>", "A<int>", "up"));
+        REQUIRE(IsInstantiation(src, "A<T>", "A<std::string>", "up"));
 
-    auto puml = generate_class_puml(diagram, *model);
-    AliasMatcher _A(puml);
-
-    REQUIRE_THAT(puml, StartsWith("@startuml"));
-    REQUIRE_THAT(puml, EndsWith("@enduml\n"));
-    REQUIRE_THAT(puml, IsClassTemplate("A", "T"));
-    REQUIRE_THAT(puml, IsClass(_A("B")));
-
-    REQUIRE_THAT(puml, (IsField<Public>("value", "T")));
-    REQUIRE_THAT(puml, (IsField<Public>("aint", "A<int>")));
-    REQUIRE_THAT(puml, (IsField<Public>("astring", "A<std::string>*")));
-    REQUIRE_THAT(
-        puml, (IsField<Public>("avector", "A<std::vector<std::string>>&")));
-
-    REQUIRE_THAT(puml, IsInstantiation(_A("A<T>"), _A("A<int>")));
-    REQUIRE_THAT(puml, IsInstantiation(_A("A<T>"), _A("A<std::string>")));
-
-    REQUIRE_THAT(puml, IsAggregation(_A("B"), _A("A<int>"), "+aint"));
-    REQUIRE_THAT(
-        puml, IsAssociation(_A("B"), _A("A<std::string>"), "+astring"));
-    REQUIRE_THAT(puml,
-        IsAssociation(_A("B"), _A("A<std::vector<std::string>>"), "+avector"));
-
-    save_puml(
-        "./" + config.output_directory() + "/" + diagram->name + ".puml", puml);
+        REQUIRE(
+            IsAggregation<Public>(src, "B", "A<int>", "aint", "", "", "up"));
+        REQUIRE(IsAssociation<Public>(
+            src, "B", "A<std::string>", "astring", "", "", "up"));
+        REQUIRE(IsAssociation<Public>(
+            src, "B", "A<std::vector<std::string>>", "avector", "", "", "up"));
+    });
 }

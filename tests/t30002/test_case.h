@@ -1,7 +1,7 @@
 /**
- * tests/t30002/test_case.cc
+ * tests/t30002/test_case.h
  *
- * Copyright (c) 2021-2022 Bartek Kryza <bkryza@gmail.com>
+ * Copyright (c) 2021-2024 Bartek Kryza <bkryza@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,55 +16,54 @@
  * limitations under the License.
  */
 
-TEST_CASE("t30002", "[test-case][package]")
+TEST_CASE("t30002")
 {
-    auto [config, db] = load_config("t30002");
+    using namespace clanguml::test;
+    using namespace std::string_literals;
 
-    auto diagram = config.diagrams["t30002_package"];
+    auto [config, db, diagram, model] =
+        CHECK_PACKAGE_MODEL("t30002", "t30002_package");
 
-    REQUIRE(diagram->name == "t30002_package");
+    CHECK_PACKAGE_DIAGRAM(*config, diagram, *model, [](const auto &src) {
+        REQUIRE(IsNamespacePackage(src, "A"s, "AA"s));
+        REQUIRE(IsNamespacePackage(src, "A"s, "AA"s, "A1"s));
+        REQUIRE(IsNamespacePackage(src, "A"s, "AA"s, "A2"s));
+        REQUIRE(IsNamespacePackage(src, "A"s, "AA"s, "A3"s));
+        REQUIRE(IsNamespacePackage(src, "A"s, "AA"s, "A4"s));
+        REQUIRE(IsNamespacePackage(src, "A"s, "AA"s, "A5"s));
+        REQUIRE(IsNamespacePackage(src, "A"s, "AA"s, "A6"s));
+        REQUIRE(IsNamespacePackage(src, "A"s, "AA"s, "A7"s));
+        REQUIRE(IsNamespacePackage(src, "A"s, "AA"s, "A8"s));
+        REQUIRE(IsNamespacePackage(src, "A"s, "AA"s, "A9"s));
+        REQUIRE(IsNamespacePackage(src, "A"s, "AA"s, "A10"s));
+        REQUIRE(IsNamespacePackage(src, "A"s, "AA"s, "A11"s));
+        REQUIRE(IsNamespacePackage(src, "A"s, "AA"s, "A12"s));
+        REQUIRE(IsNamespacePackage(src, "A"s, "AA"s, "A13"s));
+        REQUIRE(IsNamespacePackage(src, "A"s, "AA"s, "A14"s));
+        REQUIRE(IsNamespacePackage(src, "A"s, "AA"s, "A15"s));
+        REQUIRE(IsNamespacePackage(src, "A"s, "AA"s, "A16"s));
+        REQUIRE(IsNamespacePackage(src, "A"s, "AA"s, "A17"s));
+        REQUIRE(IsNamespacePackage(src, "A"s, "AA"s, "A18"s));
 
-    auto model = generate_package_diagram(db, diagram);
+        REQUIRE(IsNamespacePackage(src, "B"s, "BB"s, "BBB"s));
 
-    REQUIRE(model->name() == "t30002_package");
-
-    auto puml = generate_package_puml(diagram, *model);
-    AliasMatcher _A(puml);
-
-    REQUIRE_THAT(puml, StartsWith("@startuml"));
-    REQUIRE_THAT(puml, EndsWith("@enduml\n"));
-
-    REQUIRE_THAT(puml, IsPackage("A1"));
-    REQUIRE_THAT(puml, IsPackage("A2"));
-    REQUIRE_THAT(puml, IsPackage("A3"));
-    REQUIRE_THAT(puml, IsPackage("A4"));
-    REQUIRE_THAT(puml, IsPackage("A5"));
-    REQUIRE_THAT(puml, IsPackage("A6"));
-    REQUIRE_THAT(puml, IsPackage("A7"));
-    REQUIRE_THAT(puml, IsPackage("A8"));
-    REQUIRE_THAT(puml, IsPackage("A9"));
-    REQUIRE_THAT(puml, IsPackage("A11"));
-    REQUIRE_THAT(puml, IsPackage("A12"));
-    REQUIRE_THAT(puml, IsPackage("A13"));
-    REQUIRE_THAT(puml, IsPackage("A14"));
-    REQUIRE_THAT(puml, IsPackage("A15"));
-
-    REQUIRE_THAT(puml, IsDependency(_A("BBB"), _A("A1")));
-    REQUIRE_THAT(puml, IsDependency(_A("BBB"), _A("A2")));
-    REQUIRE_THAT(puml, IsDependency(_A("BBB"), _A("A3")));
-    REQUIRE_THAT(puml, IsDependency(_A("BBB"), _A("A4")));
-    REQUIRE_THAT(puml, IsDependency(_A("BBB"), _A("A5")));
-    REQUIRE_THAT(puml, IsDependency(_A("BBB"), _A("A6")));
-    REQUIRE_THAT(puml, IsDependency(_A("BBB"), _A("A7")));
-    REQUIRE_THAT(puml, IsDependency(_A("BBB"), _A("A8")));
-    REQUIRE_THAT(puml, IsDependency(_A("BBB"), _A("A9")));
-    REQUIRE_THAT(puml, IsDependency(_A("BBB"), _A("A10")));
-    REQUIRE_THAT(puml, IsDependency(_A("BBB"), _A("A11")));
-    REQUIRE_THAT(puml, IsDependency(_A("BBB"), _A("A12")));
-    REQUIRE_THAT(puml, IsDependency(_A("BBB"), _A("A13")));
-    REQUIRE_THAT(puml, IsDependency(_A("BBB"), _A("A14")));
-    REQUIRE_THAT(puml, IsDependency(_A("BBB"), _A("A15")));
-
-    save_puml(
-        "./" + config.output_directory() + "/" + diagram->name + ".puml", puml);
+        REQUIRE(IsDependency(src, "BBB", "A1"));
+        REQUIRE(IsDependency(src, "BBB", "A2"));
+        REQUIRE(IsDependency(src, "BBB", "A3"));
+        REQUIRE(IsDependency(src, "BBB", "A4"));
+        REQUIRE(IsDependency(src, "BBB", "A5"));
+        REQUIRE(IsDependency(src, "BBB", "A6"));
+        REQUIRE(IsDependency(src, "BBB", "A7"));
+        REQUIRE(IsDependency(src, "BBB", "A8"));
+        REQUIRE(IsDependency(src, "BBB", "A9"));
+        REQUIRE(IsDependency(src, "BBB", "A10"));
+        REQUIRE(IsDependency(src, "BBB", "A11"));
+        REQUIRE(IsDependency(src, "BBB", "A12"));
+        REQUIRE(IsDependency(src, "BBB", "A13"));
+        REQUIRE(IsDependency(src, "BBB", "A14"));
+        REQUIRE(IsDependency(src, "BBB", "A15"));
+        REQUIRE(IsDependency(src, "BBB", "A16"));
+        REQUIRE(IsDependency(src, "BBB", "A17"));
+        REQUIRE(IsDependency(src, "BBB", "A18"));
+    });
 }

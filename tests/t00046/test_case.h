@@ -1,7 +1,7 @@
 /**
- * tests/t00046/test_case.cc
+ * tests/t00046/test_case.h
  *
- * Copyright (c) 2021-2022 Bartek Kryza <bkryza@gmail.com>
+ * Copyright (c) 2021-2024 Bartek Kryza <bkryza@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,32 +16,23 @@
  * limitations under the License.
  */
 
-TEST_CASE("t00046", "[test-case][class]")
+TEST_CASE("t00046")
 {
-    auto [config, db] = load_config("t00046");
+    using namespace clanguml::test;
 
-    auto diagram = config.diagrams["t00046_class"];
+    auto [config, db, diagram, model] =
+        CHECK_CLASS_MODEL("t00046", "t00046_class");
 
-    REQUIRE(diagram->name == "t00046_class");
+    CHECK_CLASS_DIAGRAM(*config, diagram, *model, [](const auto &src) {
+        REQUIRE(IsClass(src, "A"));
+        REQUIRE(IsClass(src, "AA"));
+        REQUIRE(IsClass(src, {"ns1::ns2", "B"}));
+        REQUIRE(IsClass(src, {"ns1::ns2", "C"}));
+        REQUIRE(IsClass(src, {"ns1::ns2", "D"}));
+        REQUIRE(IsClass(src, {"ns1::ns2", "E"}));
+        REQUIRE(IsClass(src, {"ns1::ns2", "R"}));
 
-    auto model = generate_class_diagram(db, diagram);
-
-    REQUIRE(model->name() == "t00046_class");
-    REQUIRE(model->should_include("ns1::ns2::A"));
-
-    auto puml = generate_class_puml(diagram, *model);
-    AliasMatcher _A(puml);
-
-    REQUIRE_THAT(puml, StartsWith("@startuml"));
-    REQUIRE_THAT(puml, EndsWith("@enduml\n"));
-    REQUIRE_THAT(puml, IsClass(_A("A")));
-    REQUIRE_THAT(puml, IsClass(_A("B")));
-    REQUIRE_THAT(puml, IsClass(_A("C")));
-    REQUIRE_THAT(puml, IsClass(_A("D")));
-    REQUIRE_THAT(puml, IsClass(_A("E")));
-    REQUIRE_THAT(puml, IsClass(_A("R")));
-
-    REQUIRE_THAT(puml, IsField<Public>("i", "std::vector<std::uint8_t>"));
-    save_puml(
-        "./" + config.output_directory() + "/" + diagram->name + ".puml", puml);
+        REQUIRE(IsField<Public>(
+            src, {"ns1::ns2", "R"}, "i", "std::vector<std::uint8_t>"));
+    });
 }

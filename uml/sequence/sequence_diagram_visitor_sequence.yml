@@ -1,0 +1,26 @@
+type: sequence
+title: Sequence diagram AST visitor sequence diagram
+# Group free functions into one participant per file
+combine_free_functions_into_file_participants: true
+# Do not generate method or function arguments
+generate_method_arguments: none
+glob:
+  - src/sequence_diagram/visitor/*.cc
+  - src/sequence_diagram/model/*.cc
+  - src/common/visitor/*.cc
+  - src/common/model/*.cc
+include:
+  namespaces:
+    - clanguml
+  paths:
+    - .
+exclude:
+  namespaces:
+    - clanguml::model::tvl
+    - clanguml::decorators
+  paths:
+    - src/common/model/source_location.h
+using_namespace:
+  - clanguml
+from:
+  - function: "clanguml::sequence_diagram::visitor::translation_unit_visitor::VisitCXXRecordDecl(clang::CXXRecordDecl *)"

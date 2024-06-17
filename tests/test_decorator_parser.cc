@@ -1,7 +1,7 @@
 /**
- * tests/test_decorator_parser.cc
+ * @file tests/test_decorator_parser.cc
  *
- * Copyright (c) 2021-2022 Bartek Kryza <bkryza@gmail.com>
+ * Copyright (c) 2021-2024 Bartek Kryza <bkryza@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,13 +15,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#define CATCH_CONFIG_MAIN
+#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 
 #include "decorators/decorators.h"
+#include "util/util.h"
 
-#include "catch.h"
+#include "doctest/doctest.h"
 
-TEST_CASE("Test decorator parser on regular comment", "[unit-test]")
+TEST_CASE("Test decorator parser on regular comment")
 {
     std::string comment = R"(
     \brief This is a comment.
@@ -35,12 +36,13 @@ TEST_CASE("Test decorator parser on regular comment", "[unit-test]")
 
     using namespace clanguml::decorators;
 
-    auto decorators = parse(comment);
+    auto [decorators, stripped] = parse(comment);
 
     CHECK(decorators.empty());
+    CHECK(clanguml::util::trim(comment) == stripped);
 }
 
-TEST_CASE("Test decorator parser on note", "[unit-test]")
+TEST_CASE("Test decorator parser on note")
 {
     std::string comment = R"(
     \brief This is a comment.
@@ -62,7 +64,7 @@ TEST_CASE("Test decorator parser on note", "[unit-test]")
 
     using namespace clanguml::decorators;
 
-    auto decorators = parse(comment);
+    auto [decorators, stripped] = parse(comment);
 
     CHECK(decorators.size() == 4);
 
@@ -86,9 +88,18 @@ TEST_CASE("Test decorator parser on note", "[unit-test]")
     CHECK(n4);
     CHECK(n4->position == "left");
     CHECK(n4->text == "This is a comment");
+
+    CHECK(stripped == R"(\brief This is a comment.
+
+    This is a longer comment.
+
+    \
+
+    \param a int an int
+    \param b float a float)");
 }
 
-TEST_CASE("Test decorator parser on note with custom tag", "[unit-test]")
+TEST_CASE("Test decorator parser on note with custom tag")
 {
     std::string comment = R"(
     \brief This is a comment.
@@ -110,7 +121,7 @@ TEST_CASE("Test decorator parser on note with custom tag", "[unit-test]")
 
     using namespace clanguml::decorators;
 
-    auto decorators = parse(comment, "clanguml");
+    auto [decorators, stripped] = parse(comment, "clanguml");
 
     CHECK(decorators.size() == 4);
 
@@ -134,9 +145,18 @@ TEST_CASE("Test decorator parser on note with custom tag", "[unit-test]")
     CHECK(n4);
     CHECK(n4->position == "left");
     CHECK(n4->text == "This is a comment");
+
+    CHECK(stripped == R"(\brief This is a comment.
+
+    This is a longer comment.
+
+    \
+
+    \param a int an int
+    \param b float a float)");
 }
 
-TEST_CASE("Test decorator parser on style", "[unit-test]")
+TEST_CASE("Test decorator parser on style")
 {
     std::string comment = R"(
     \uml{style[#green,dashed,thickness=4]}
@@ -144,7 +164,7 @@ TEST_CASE("Test decorator parser on style", "[unit-test]")
 
     using namespace clanguml::decorators;
 
-    auto decorators = parse(comment);
+    auto [decorators, stripped] = parse(comment);
 
     CHECK(decorators.size() == 1);
 
@@ -152,9 +172,10 @@ TEST_CASE("Test decorator parser on style", "[unit-test]")
 
     CHECK(n1);
     CHECK(n1->spec == "#green,dashed,thickness=4");
+    CHECK(stripped.empty());
 }
 
-TEST_CASE("Test decorator parser on aggregation", "[unit-test]")
+TEST_CASE("Test decorator parser on aggregation")
 {
     std::string comment = R"(
     \uml{aggregation[0..1:0..*]}
@@ -162,7 +183,7 @@ TEST_CASE("Test decorator parser on aggregation", "[unit-test]")
 
     using namespace clanguml::decorators;
 
-    auto decorators = parse(comment);
+    auto [decorators, stripped] = parse(comment);
 
     CHECK(decorators.size() == 1);
 
@@ -170,9 +191,10 @@ TEST_CASE("Test decorator parser on aggregation", "[unit-test]")
 
     CHECK(n1);
     CHECK(n1->multiplicity == "0..1:0..*");
+    CHECK(stripped.empty());
 }
 
-TEST_CASE("Test decorator parser on skip", "[unit-test]")
+TEST_CASE("Test decorator parser on skip")
 {
     std::string comment = R"(
     \uml{skip}
@@ -180,16 +202,17 @@ TEST_CASE("Test decorator parser on skip", "[unit-test]")
 
     using namespace clanguml::decorators;
 
-    auto decorators = parse(comment);
+    auto [decorators, stripped] = parse(comment);
 
     CHECK(decorators.size() == 1);
 
     auto n1 = std::dynamic_pointer_cast<skip>(decorators.at(0));
 
     CHECK(n1);
+    CHECK(stripped.empty());
 }
 
-TEST_CASE("Test decorator parser on skiprelationship", "[unit-test]")
+TEST_CASE("Test decorator parser on skiprelationship")
 {
     std::string comment = R"(
     \uml{skiprelationship}
@@ -197,16 +220,17 @@ TEST_CASE("Test decorator parser on skiprelationship", "[unit-test]")
 
     using namespace clanguml::decorators;
 
-    auto decorators = parse(comment);
+    auto [decorators, stripped] = parse(comment);
 
     CHECK(decorators.size() == 1);
 
     auto n1 = std::dynamic_pointer_cast<skip_relationship>(decorators.at(0));
 
     CHECK(n1);
+    CHECK(stripped.empty());
 }
 
-TEST_CASE("Test decorator parser on diagram scope", "[unit-test]")
+TEST_CASE("Test decorator parser on diagram scope")
 {
     std::string comment = R"(
     \uml{note:diagram1,  diagram2,
@@ -215,7 +239,7 @@ TEST_CASE("Test decorator parser on diagram scope", "[unit-test]")
 
     using namespace clanguml::decorators;
 
-    auto decorators = parse(comment);
+    auto [decorators, stripped] = parse(comment);
 
     CHECK(decorators.size() == 1);
 
@@ -232,4 +256,21 @@ TEST_CASE("Test decorator parser on diagram scope", "[unit-test]")
 
     CHECK(n1->applies_to_diagram("diagram2"));
     CHECK(!n1->applies_to_diagram("diagram4"));
+    CHECK(stripped.empty());
+}
+
+TEST_CASE("Test invalid comment - unterminated curly brace")
+{
+    std::string comment = R"(
+    Test test test
+    \uml{call clanguml::test:aa()
+    )";
+
+    using namespace clanguml::decorators;
+
+    auto [decorators, stripped] = parse(comment);
+
+    CHECK(decorators.size() == 0);
+
+    CHECK(stripped.empty());
 }

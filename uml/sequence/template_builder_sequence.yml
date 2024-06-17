@@ -1,0 +1,21 @@
+type: sequence
+title: Diagram element template builder sequence diagram
+combine_free_functions_into_file_participants: true
+generate_method_arguments: none
+generate_condition_statements: true
+generate_message_comments: true
+glob:
+  - src/common/visitor/template_builder.cc
+include:
+  namespaces:
+    - clanguml
+  paths:
+    - src/common/visitor/template_builder.h
+    - src/common/visitor/template_builder.cc
+exclude:
+  paths:
+    - src/common/model/source_location.h
+using_namespace:
+  - clanguml
+from:
+  - function: "clanguml::common::visitor::template_builder<VisitorT>::build(common::model::template_element &,const clang::NamedDecl *,const clang::TemplateDecl *,const clang::ArrayRef<clang::TemplateArgument>,std::string,std::optional<common::model::template_element *>)"

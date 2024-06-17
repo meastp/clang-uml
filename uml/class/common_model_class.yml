@@ -1,0 +1,21 @@
+type: class
+title: Common diagram model
+include_relations_also_as_members: false
+glob:
+  - src/common/model/*.cc
+include:
+  namespaces:
+    - clanguml::common::model
+exclude:
+  relationships:
+    - dependency
+  subclasses:
+    - clanguml::common::model::filter_visitor
+  access: [public, protected, private]
+  element_types:
+    - enum
+using_namespace:
+  - clanguml::common::model
+plantuml:
+  after:
+    - 'note top of {{ alias("diagram") }}: Common class for specific diagram types'

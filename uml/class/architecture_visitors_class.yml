@@ -1,0 +1,19 @@
+type: class
+title: Translation unit AST visitors
+generate_packages: true
+glob:
+  - src/docs/architecture.cc
+include:
+  namespaces:
+    - clanguml
+  elements:
+    - r: "clanguml::.+::translation_unit_visitor.*"
+    - r: "clanguml::.+::model::diagram"
+exclude:
+  access: [ public, protected, private ]
+  relationships: [ dependency ]
+plantuml:
+  style:
+    inheritance: up
+  before:
+    - left to right direction

@@ -1,0 +1,11 @@
+diagrams:
+  t20003_sequence:
+    type: sequence
+    glob:
+      - t20003.cc
+    include:
+      namespaces:
+        - clanguml::t20003
+    using_namespace: clanguml::t20003
+    from:
+      - function: "clanguml::t20003::m1<T>(T)"

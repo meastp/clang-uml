@@ -1,7 +1,7 @@
 /**
  * tests/{{ name }}/test_case.h
  *
- * Copyright (c) 2021-2022 Bartek Kryza <bkryza@gmail.com>
+ * Copyright (c) 2021-2024 Bartek Kryza <bkryza@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,26 +16,13 @@
  * limitations under the License.
  */
 
-TEST_CASE("{{ name }}", "[test-case][{{ type }}]")
+TEST_CASE("{{ name }}")
 {
-    auto [config, db] = load_config("{{ name }}");
+    using namespace clanguml::test;
+    using namespace std::string_literals;
 
-    auto diagram = config.diagrams["{{ name }}_{{ type }}"];
-
-    REQUIRE(diagram->name == "{{ name }}_{{ type }}");
-
-    auto model = generate_{{ type }}_diagram(db, diagram);
-
-    REQUIRE(model->name() == "{{ name }}_{{ type }}");
-
-    auto puml = generate_{{ type }}_puml(diagram, *model);
-    AliasMatcher _A(puml);
-
-    REQUIRE_THAT(puml, StartsWith("@startuml"));
-    REQUIRE_THAT(puml, EndsWith("@enduml\n"));
+    auto [config, db, diagram, model] =
+        CHECK_{{ TYPE }}_MODEL("{{ name }}", "{{ name }}_{{ type }}");
 
     {{ examples }}
-
-    save_puml(
-        "./" + config.output_directory() + "/" + diagram->name + ".puml", puml);
 }

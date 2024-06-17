@@ -1,5 +1,4 @@
 #include <algorithm>
-#include <numeric>
 #include <vector>
 
 namespace clanguml {
@@ -28,7 +27,7 @@ public:
         return res;
     }
 
-    void log_result(int r) { }
+    static void log_result(int r) { }
 
 private:
     detail::C m_c{};
@@ -64,7 +63,11 @@ int tmain()
     A a;
     B b(a);
 
-    return b.wrap_add3(1, 2, 3);
+    // \uml{note Just add 2 numbers}
+    auto tmp = a.add(1, 2);
+
+    // \uml{note[] And now add another 2}
+    return b.wrap_add3(tmp, 2, 3);
 }
 }
 }

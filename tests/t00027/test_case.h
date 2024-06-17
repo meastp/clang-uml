@@ -1,7 +1,7 @@
 /**
  * tests/t00027/test_case.cc
  *
- * Copyright (c) 2021-2022 Bartek Kryza <bkryza@gmail.com>
+ * Copyright (c) 2021-2024 Bartek Kryza <bkryza@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,44 +16,34 @@
  * limitations under the License.
  */
 
-TEST_CASE("t00027", "[test-case][class]")
+TEST_CASE("t00027")
 {
-    auto [config, db] = load_config("t00027");
+    using namespace clanguml::test;
 
-    auto diagram = config.diagrams["t00027_class"];
+    auto [config, db, diagram, model] =
+        CHECK_CLASS_MODEL("t00027", "t00027_class");
 
-    REQUIRE(diagram->name == "t00027_class");
+    CHECK_CLASS_DIAGRAM(*config, diagram, *model, [](const auto &src) {
+        REQUIRE(IsAbstractClass(src, "Shape"));
+        REQUIRE(IsAbstractClass(src, "ShapeDecorator"));
 
-    auto model = generate_class_diagram(db, diagram);
+        REQUIRE(IsClassTemplate(src, "Line<T<>...>"));
+        REQUIRE(IsInstantiation(src, "Line<T<>...>", "Line<Color>"));
+        REQUIRE(IsInstantiation(src, "Line<T<>...>", "Line<Color,Weight>"));
+        REQUIRE(
+            IsAggregation<Public>(src, "Window", "Text<Color>", "description"));
 
-    REQUIRE(model->name() == "t00027_class");
-    REQUIRE(model->should_include("clanguml::t00027::A"));
+        REQUIRE(IsInstantiation(src, "Line<T<>...>", "Line<Color>"));
+        REQUIRE(IsInstantiation(src, "Line<T<>...>", "Line<Color,Weight>"));
+        REQUIRE(IsInstantiation(src, "Text<T<>...>", "Text<Color>"));
+        REQUIRE(IsInstantiation(src, "Text<T<>...>", "Text<Color,Weight>"));
 
-    auto puml = generate_class_puml(diagram, *model);
-    AliasMatcher _A(puml);
-
-    REQUIRE_THAT(puml, StartsWith("@startuml"));
-    REQUIRE_THAT(puml, EndsWith("@enduml\n"));
-    REQUIRE_THAT(puml, IsAbstractClass(_A("Shape")));
-    REQUIRE_THAT(puml, IsAbstractClass(_A("ShapeDecorator")));
-    REQUIRE_THAT(puml, IsClassTemplate("Line", "T<>..."));
-    REQUIRE_THAT(puml, IsClassTemplate("Text", "T<>..."));
-    REQUIRE_THAT(puml, IsInstantiation(_A("Line<T<>...>"), _A("Line<Color>")));
-    REQUIRE_THAT(
-        puml, IsInstantiation(_A("Line<T<>...>"), _A("Line<Color,Weight>")));
-    REQUIRE_THAT(puml, IsInstantiation(_A("Text<T<>...>"), _A("Text<Color>")));
-    REQUIRE_THAT(
-        puml, IsInstantiation(_A("Text<T<>...>"), _A("Text<Color,Weight>")));
-
-    REQUIRE_THAT(
-        puml, IsAggregation(_A("Window"), _A("Line<Color,Weight>"), "+border"));
-    REQUIRE_THAT(
-        puml, IsAggregation(_A("Window"), _A("Line<Color>"), "+divider"));
-    REQUIRE_THAT(
-        puml, IsAggregation(_A("Window"), _A("Text<Color,Weight>"), "+title"));
-    REQUIRE_THAT(
-        puml, IsAggregation(_A("Window"), _A("Text<Color>"), "+description"));
-
-    save_puml(
-        "./" + config.output_directory() + "/" + diagram->name + ".puml", puml);
+        REQUIRE(IsAggregation<Public>(
+            src, "Window", "Line<Color,Weight>", "border"));
+        REQUIRE(IsAggregation<Public>(src, "Window", "Line<Color>", "divider"));
+        REQUIRE(IsAggregation<Public>(
+            src, "Window", "Text<Color,Weight>", "title"));
+        REQUIRE(
+            IsAggregation<Public>(src, "Window", "Text<Color>", "description"));
+    });
 }

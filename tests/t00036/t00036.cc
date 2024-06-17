@@ -17,17 +17,28 @@ struct B {
     A<int> a_int;
 };
 
-}
-}
-}
+} // namespace ns111
+} // namespace ns11
+} // namespace ns1
 
 namespace ns2 {
 namespace ns22 {
 
-struct C;
+// TODO: Fix for incomplete struct C declaration "struct C;"
+struct C { };
 
+struct D { };
+
+} // namespace ns22
+} // namespace ns2
+
+namespace ns3 {
+namespace ns33 {
+namespace detail {
+struct DImpl : public ns2::ns22::D { };
 }
-}
+} // namespace ns33
+} // namespace ns3
 
 } // namespace t00036
 } // namespace clanguml

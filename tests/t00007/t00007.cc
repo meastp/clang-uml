@@ -2,14 +2,11 @@
 
 namespace clanguml {
 namespace t00007 {
-class A {
-};
+class A { };
 
-class B {
-};
+class B { };
 
-class C {
-};
+class C { };
 
 class R {
 public:
@@ -17,5 +14,5 @@ public:
     std::shared_ptr<B> b;
     std::weak_ptr<C> c;
 };
-}
-}
+} // namespace t00007
+} // namespace clanguml

@@ -1,7 +1,7 @@
 /**
- * src/config/config.cc
+ * @file src/config/config.cc
  *
- * Copyright (c) 2021-2022 Bartek Kryza <bkryza@gmail.com>
+ * Copyright (c) 2021-2024 Bartek Kryza <bkryza@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,48 +17,12 @@
  */
 
 #include "config.h"
+#include "diagram_templates.h"
+#include "glob/glob.hpp"
 
 #include <filesystem>
 
-namespace clanguml {
-namespace config {
-
-config load(const std::string &config_file)
-{
-    try {
-        YAML::Node doc = YAML::LoadFile(config_file);
-
-        // Store the parent path of the config_file to properly resolve
-        // the include files paths
-        auto config_file_path =
-            std::filesystem::absolute(std::filesystem::path{config_file});
-        doc.force_insert(
-            "__parent_path", config_file_path.parent_path().string());
-
-        // If the current directory is also a git repository,
-        // load some config values, which can be included in the
-        // generated diagrams
-        if (util::is_git_repository() && !doc["git"]) {
-            YAML::Node git_config{YAML::NodeType::Map};
-            git_config["branch"] = util::get_git_branch();
-            git_config["revision"] = util::get_git_revision();
-            git_config["commit"] = util::get_git_commit();
-            git_config["toplevel"] = util::get_git_toplevel_dir();
-
-            doc["git"] = git_config;
-        }
-
-        return doc.as<config>();
-    }
-    catch (YAML::BadFile &e) {
-        throw std::runtime_error(fmt::format(
-            "Could not open config file {}: {}", config_file, e.what()));
-    }
-    catch (YAML::Exception &e) {
-        throw std::runtime_error(fmt::format(
-            "Cannot parse YAML file {}: {}", config_file, e.what()));
-    }
-}
+namespace clanguml::config {
 
 std::string to_string(const hint_t t)
 {
@@ -71,16 +35,175 @@ std::string to_string(const hint_t t)
         return "left";
     case hint_t::right:
         return "right";
+    case hint_t::together:
+        return "together";
+    case hint_t::row:
+        return "row";
+    case hint_t::column:
+        return "column";
     default:
         assert(false);
         return "";
     }
 }
 
+std::string to_string(const method_arguments ma)
+{
+    switch (ma) {
+    case method_arguments::full:
+        return "full";
+    case method_arguments::abbreviated:
+        return "abbreviated";
+    case method_arguments::none:
+        return "none";
+    default:
+        assert(false);
+        return "";
+    }
+}
+
+std::string to_string(method_type mt)
+{
+    switch (mt) {
+    case method_type::constructor:
+        return "constructor";
+    case method_type::destructor:
+        return "destructor";
+    case method_type::assignment:
+        return "assignment";
+    case method_type::operator_:
+        return "operator";
+    case method_type::defaulted:
+        return "defaulted";
+    case method_type::deleted:
+        return "deleted";
+    case method_type::static_:
+        return "static";
+    }
+
+    assert(false);
+    return "";
+}
+
+std::string to_string(callee_type mt)
+{
+    switch (mt) {
+    case callee_type::constructor:
+        return "constructor";
+    case callee_type::assignment:
+        return "assignment";
+    case callee_type::operator_:
+        return "operator";
+    case callee_type::defaulted:
+        return "defaulted";
+    case callee_type::static_:
+        return "static";
+    case callee_type::method:
+        return "method";
+    case callee_type::function:
+        return "function";
+    case callee_type::function_template:
+        return "function_template";
+    case callee_type::lambda:
+        return "lambda";
+    case callee_type::cuda_kernel:
+        return "cuda_kernel";
+    case callee_type::cuda_device:
+        return "cuda_device";
+    }
+
+    assert(false);
+    return "";
+}
+
+std::string to_string(const comment_parser_t cp)
+{
+    switch (cp) {
+    case comment_parser_t::clang:
+        return "clang";
+    case comment_parser_t::plain:
+        return "plain";
+    default:
+        assert(false);
+        return "";
+    }
+}
+
+std::string to_string(location_t cp)
+{
+    switch (cp) {
+    case location_t::fileline:
+        return "fileline";
+    case location_t::function:
+        return "function";
+    case location_t::marker:
+        return "marker";
+    default:
+        assert(false);
+        return "";
+    }
+}
+
+std::string to_string(package_type_t pt)
+{
+    switch (pt) {
+    case package_type_t::kNamespace:
+        return "namespace";
+    case package_type_t::kDirectory:
+        return "directory";
+    case package_type_t::kModule:
+        return "module";
+    default:
+        assert(false);
+        return "";
+    }
+}
+
+std::string to_string(member_order_t mo)
+{
+    switch (mo) {
+    case member_order_t::lexical:
+        return "lexical";
+    case member_order_t::as_is:
+        return "as_is";
+    default:
+        assert(false);
+        return "";
+    }
+}
+
+std::optional<std::string> plantuml::get_style(
+    const common::model::relationship_t relationship_type) const
+{
+    if (style.count(to_string(relationship_type)) == 0)
+        return {};
+
+    return style.at(to_string(relationship_type));
+}
+
+std::optional<std::string> plantuml::get_style(
+    const std::string &element_type) const
+{
+    if (style.count(element_type) == 0)
+        return {};
+
+    return style.at(element_type);
+}
+
 void plantuml::append(const plantuml &r)
 {
     before.insert(before.end(), r.before.begin(), r.before.end());
     after.insert(after.end(), r.after.begin(), r.after.end());
+    if (cmd.empty())
+        cmd = r.cmd;
+}
+
+void mermaid::append(const mermaid &r)
+{
+    before.insert(before.end(), r.before.begin(), r.before.end());
+    after.insert(after.end(), r.after.begin(), r.after.end());
+    if (cmd.empty())
+        cmd = r.cmd;
 }
 
 void inheritable_diagram_options::inherit(
@@ -88,17 +211,191 @@ void inheritable_diagram_options::inherit(
 {
     glob.override(parent.glob);
     using_namespace.override(parent.using_namespace);
+    using_module.override(parent.using_module);
     include_relations_also_as_members.override(
         parent.include_relations_also_as_members);
     include.override(parent.include);
     exclude.override(parent.exclude);
     puml.override(parent.puml);
+    mermaid.override(parent.mermaid);
     generate_method_arguments.override(parent.generate_method_arguments);
+    generate_concept_requirements.override(
+        parent.generate_concept_requirements);
+    generate_packages.override(parent.generate_packages);
+    generate_template_argument_dependencies.override(
+        parent.generate_template_argument_dependencies);
+    package_type.override(parent.package_type);
+    generate_template_argument_dependencies.override(
+        parent.generate_template_argument_dependencies);
+    skip_redundant_dependencies.override(parent.skip_redundant_dependencies);
     generate_links.override(parent.generate_links);
     generate_system_headers.override(parent.generate_system_headers);
     git.override(parent.git);
     base_directory.override(parent.base_directory);
     relative_to.override(parent.relative_to);
+    comment_parser.override(parent.comment_parser);
+    combine_free_functions_into_file_participants.override(
+        parent.combine_free_functions_into_file_participants);
+    inline_lambda_messages.override(parent.inline_lambda_messages);
+    generate_return_types.override(parent.generate_return_types);
+    generate_condition_statements.override(
+        parent.generate_condition_statements);
+    debug_mode.override(parent.debug_mode);
+    generate_metadata.override(parent.generate_metadata);
+    allow_empty_diagrams.override(parent.allow_empty_diagrams);
+    type_aliases.override(parent.type_aliases);
+}
+
+std::string inheritable_diagram_options::simplify_template_type(
+    std::string full_name) const
+{
+    type_aliases_longer_first_t aliases;
+    aliases.insert(type_aliases().begin(), type_aliases().end());
+
+    bool matched{true};
+    while (matched) {
+        auto matched_in_iteration{false};
+        for (const auto &[pattern, replacement] : aliases) {
+            matched_in_iteration =
+                util::replace_all(full_name, pattern, replacement) ||
+                matched_in_iteration;
+        }
+        matched = matched_in_iteration;
+    }
+
+    return full_name;
+}
+
+bool inheritable_diagram_options::generate_fully_qualified_name() const
+{
+    return (package_type() == package_type_t::kNamespace) &&
+        !generate_packages();
+}
+
+std::vector<std::string> diagram::get_translation_units() const
+{
+    std::vector<std::string> translation_units{};
+
+    LOG_DBG("Looking for translation units in {}", root_directory().string());
+
+    for (const auto &g : glob()) {
+        std::filesystem::path absolute_glob_path{g};
+
+#ifdef _MSC_VER
+        if (!absolute_glob_path.has_root_name())
+#else
+        if (!absolute_glob_path.is_absolute())
+#endif
+            absolute_glob_path = root_directory() / absolute_glob_path;
+
+        LOG_DBG("Searching glob path {}", absolute_glob_path.string());
+
+        auto matches = glob::glob(absolute_glob_path.string(), true, false);
+
+        for (const auto &match : matches) {
+            const auto path =
+                std::filesystem::canonical(root_directory() / match);
+            translation_units.emplace_back(path.string());
+        }
+    }
+
+    return translation_units;
+}
+
+std::filesystem::path diagram::root_directory() const
+{
+    return weakly_canonical(absolute(base_directory() / relative_to()));
+}
+
+std::filesystem::path diagram::make_path_relative(
+    const std::filesystem::path &p) const
+{
+    return relative(p, root_directory()).lexically_normal().string();
+}
+
+std::vector<std::string> diagram::make_module_relative(
+    const std::optional<std::string> &maybe_module) const
+{
+    if (!maybe_module)
+        return {};
+
+    auto module_path = common::model::path(
+        maybe_module.value(), common::model::path_type::kModule)
+                           .tokens();
+
+    if (using_module.has_value) {
+        auto using_module_path = common::model::path(
+            using_module(), common::model::path_type::kModule)
+                                     .tokens();
+
+        if (util::starts_with(module_path, using_module_path)) {
+            util::remove_prefix(module_path, using_module_path);
+        }
+    }
+
+    return module_path;
+}
+
+std::optional<std::string> diagram::get_together_group(
+    const std::string &full_name) const
+{
+    const auto relative_name = using_namespace().relative(full_name);
+
+    for (const auto &[hint_target, hints] : layout()) {
+        for (const auto &hint : hints) {
+            if (hint.hint == hint_t::together) {
+                const auto &together_others =
+                    std::get<std::vector<std::string>>(hint.entity);
+
+                if ((full_name == hint_target) ||
+                    util::contains(together_others, full_name))
+                    return hint_target;
+
+                if ((relative_name == hint_target) ||
+                    util::contains(together_others, relative_name))
+                    return hint_target;
+            }
+        }
+    }
+
+    return std::nullopt;
+}
+
+void diagram::initialize_type_aliases()
+{
+    if (type_aliases().count("std::basic_string<char>") == 0U) {
+        type_aliases().insert({"std::basic_string<char>", "std::string"});
+    }
+    if (type_aliases().count("std::basic_string<char,std::char_traits<"
+                             "char>,std::allocator<char>>") == 0U) {
+        type_aliases().insert({"std::basic_string<char,std::char_traits<"
+                               "char>,std::allocator<char>>",
+            "std::string"});
+    }
+    if (type_aliases().count("std::basic_string<wchar_t>") == 0U) {
+        type_aliases().insert({"std::basic_string<wchar_t>", "std::wstring"});
+    }
+    if (type_aliases().count("std::basic_string<char16_t>") == 0U) {
+        type_aliases().insert(
+            {"std::basic_string<char16_t>", "std::u16string"});
+    }
+    if (type_aliases().count("std::basic_string<char32_t>") == 0U) {
+        type_aliases().insert(
+            {"std::basic_string<char32_t>", "std::u32string"});
+    }
+    if (type_aliases().count("std::integral_constant<bool,true>") == 0U) {
+        type_aliases().insert(
+            {"std::integral_constant<bool,true>", "std::true_type"});
+    }
+    if (type_aliases().count("std::integral_constant<bool,false>") == 0U) {
+        type_aliases().insert(
+            {"std::integral_constant<bool,false>", "std::false_type"});
+    }
+#if LLVM_VERSION_MAJOR >= 16
+    if (type_aliases().count("std::basic_string") == 0U) {
+        type_aliases().insert({"std::basic_string", "std::string"});
+    }
+#endif
 }
 
 common::model::diagram_t class_diagram::type() const
@@ -125,46 +422,27 @@ void class_diagram::initialize_relationship_hints()
 {
     using common::model::relationship_t;
 
-    if (!relationship_hints().count("std::vector")) {
+    if (relationship_hints().count("std::vector") == 0U) {
         relationship_hints().insert({"std::vector", {}});
     }
-    if (!relationship_hints().count("std::unique_ptr")) {
+    if (relationship_hints().count("std::unique_ptr") == 0U) {
         relationship_hints().insert({"std::unique_ptr", {}});
     }
-    if (!relationship_hints().count("std::shared_ptr")) {
+    if (relationship_hints().count("std::shared_ptr") == 0U) {
         relationship_hints().insert(
             {"std::shared_ptr", {relationship_t::kAssociation}});
     }
-    if (!relationship_hints().count("std::weak_ptr")) {
+    if (relationship_hints().count("std::weak_ptr") == 0U) {
         relationship_hints().insert(
             {"std::weak_ptr", {relationship_t::kAssociation}});
     }
-    if (!relationship_hints().count("std::tuple")) {
+    if (relationship_hints().count("std::tuple") == 0U) {
         relationship_hints().insert({"std::tuple", {}});
     }
-    if (!relationship_hints().count("std::map")) {
+    if (relationship_hints().count("std::map") == 0U) {
         relationship_hint_t hint{relationship_t::kNone};
         hint.argument_hints.insert({1, relationship_t::kAggregation});
         relationship_hints().insert({"std::tuple", std::move(hint)});
-    }
-}
-
-void class_diagram::initialize_template_aliases()
-{
-    if (!template_aliases().count("std::basic_string<char>")) {
-        template_aliases().insert({"std::basic_string<char>", "std::string"});
-    }
-    if (!template_aliases().count("std::basic_string<wchar_t>")) {
-        template_aliases().insert(
-            {"std::basic_string<wchar_t>", "std::wstring"});
-    }
-    if (!template_aliases().count("std::basic_string<char16_t>")) {
-        template_aliases().insert(
-            {"std::basic_string<char16_t>", "std::u16string"});
-    }
-    if (!template_aliases().count("std::basic_string<char32_t>")) {
-        template_aliases().insert(
-            {"std::basic_string<char32_t>", "std::u32string"});
     }
 }
 
@@ -172,530 +450,4 @@ template <> void append_value<plantuml>(plantuml &l, const plantuml &r)
 {
     l.append(r);
 }
-}
-}
-
-namespace YAML {
-using clanguml::common::model::access_t;
-using clanguml::common::model::relationship_t;
-using clanguml::config::class_diagram;
-using clanguml::config::config;
-using clanguml::config::filter;
-using clanguml::config::generate_links_config;
-using clanguml::config::git_config;
-using clanguml::config::hint_t;
-using clanguml::config::include_diagram;
-using clanguml::config::layout_hint;
-using clanguml::config::method_arguments;
-using clanguml::config::package_diagram;
-using clanguml::config::plantuml;
-using clanguml::config::relationship_hint_t;
-using clanguml::config::sequence_diagram;
-using clanguml::config::source_location;
-
-inline bool has_key(const YAML::Node &n, const std::string &key)
-{
-    assert(n.Type() == NodeType::Map);
-
-    return std::count_if(n.begin(), n.end(), [&key](auto &&n) {
-        return n.first.template as<std::string>() == key;
-    }) > 0;
-}
-
-template <typename T>
-void get_option(const Node &node, clanguml::config::option<T> &option)
-{
-    if (node[option.name])
-        option.set(node[option.name].template as<T>());
-}
-
-template <>
-void get_option<clanguml::common::model::namespace_>(const Node &node,
-    clanguml::config::option<clanguml::common::model::namespace_> &option)
-{
-    if (node[option.name]) {
-        if (node[option.name].Type() == NodeType::Scalar)
-            option.set({node[option.name].template as<std::string>()});
-        else if (node[option.name].Type() == NodeType::Sequence)
-            option.set(
-                {node[option.name].template as<std::vector<std::string>>()[0]});
-        else
-            throw std::runtime_error("Invalid using_namespace value");
-    }
-}
-
-template <>
-void get_option<method_arguments>(
-    const Node &node, clanguml::config::option<method_arguments> &option)
-{
-    if (node[option.name]) {
-        const auto &val = node[option.name].as<std::string>();
-        if (val == "full")
-            option.set(method_arguments::full);
-        else if (val == "abbreviated")
-            option.set(method_arguments::abbreviated);
-        else if (val == "none")
-            option.set(method_arguments::none);
-        else
-            throw std::runtime_error(
-                "Invalid generate_method_arguments value: " + val);
-    }
-}
-
-std::shared_ptr<clanguml::config::diagram> parse_diagram_config(const Node &d)
-{
-    const auto diagram_type = d["type"].as<std::string>();
-
-    if (diagram_type == "class") {
-        return std::make_shared<class_diagram>(d.as<class_diagram>());
-    }
-    else if (diagram_type == "sequence") {
-        return std::make_shared<sequence_diagram>(d.as<sequence_diagram>());
-    }
-    else if (diagram_type == "package") {
-        return std::make_shared<package_diagram>(d.as<package_diagram>());
-    }
-    else if (diagram_type == "include") {
-        return std::make_shared<include_diagram>(d.as<include_diagram>());
-    }
-
-    LOG_ERROR("Diagrams of type {} are not supported... ", diagram_type);
-
-    return {};
-}
-
-//
-// config std::filesystem::path decoder
-//
-template <> struct convert<std::filesystem::path> {
-    static bool decode(const Node &node, std::filesystem::path &rhs)
-    {
-        if (!node.IsScalar())
-            return false;
-
-        rhs = std::filesystem::path{node.as<std::string>()};
-
-        return true;
-    }
-};
-
-//
-// config access_t decoder
-//
-template <> struct convert<access_t> {
-    static bool decode(const Node &node, access_t &rhs)
-    {
-        if (node.as<std::string>() == "public")
-            rhs = access_t::kPublic;
-        else if (node.as<std::string>() == "protected")
-            rhs = access_t::kProtected;
-        else if (node.as<std::string>() == "private")
-            rhs = access_t::kPrivate;
-        else
-            return false;
-
-        return true;
-    }
-};
-
-//
-// config relationship_t decoder
-//
-template <> struct convert<relationship_t> {
-    static bool decode(const Node &node, relationship_t &rhs)
-    {
-        assert(node.Type() == NodeType::Scalar);
-
-        auto relationship_name = node.as<std::string>();
-        if (relationship_name == "extension" ||
-            relationship_name == "inheritance") {
-            rhs = relationship_t::kExtension;
-        }
-        else if (relationship_name == "composition") {
-            rhs = relationship_t::kComposition;
-        }
-        else if (relationship_name == "aggregation") {
-            rhs = relationship_t::kAggregation;
-        }
-        else if (relationship_name == "containment") {
-            rhs = relationship_t::kContainment;
-        }
-        else if (relationship_name == "ownership") {
-            rhs = relationship_t::kOwnership;
-        }
-        else if (relationship_name == "association") {
-            rhs = relationship_t::kAssociation;
-        }
-        else if (relationship_name == "instantiation") {
-            rhs = relationship_t::kInstantiation;
-        }
-        else if (relationship_name == "friendship") {
-            rhs = relationship_t::kFriendship;
-        }
-        else if (relationship_name == "dependency") {
-            rhs = relationship_t::kDependency;
-        }
-        else if (relationship_name == "none") {
-            rhs = relationship_t::kNone;
-        }
-        else
-            return false;
-
-        return true;
-    }
-};
-
-template <> struct convert<std::vector<source_location>> {
-    static bool decode(const Node &node, std::vector<source_location> &rhs)
-    {
-        for (auto it = node.begin(); it != node.end(); ++it) {
-            const YAML::Node &n = *it;
-            if (n["usr"]) {
-                source_location loc;
-                loc.location_type = source_location::location_t::usr;
-                loc.location = n["usr"].as<std::string>();
-                rhs.emplace_back(std::move(loc));
-            }
-            else if (n["marker"]) {
-                source_location loc;
-                loc.location_type = source_location::location_t::marker;
-                loc.location = n["marker"].as<std::string>();
-                rhs.emplace_back(std::move(loc));
-            }
-            else if (n["file"] && n["line"]) {
-                source_location loc;
-                loc.location_type = source_location::location_t::fileline;
-                loc.location = n["file"].as<std::string>() + ":" +
-                    n["line"].as<std::string>();
-                rhs.emplace_back(std::move(loc));
-            }
-            else if (n["function"]) {
-                source_location loc;
-                loc.location_type = source_location::location_t::function;
-                loc.location = n["function"].as<std::string>();
-                rhs.emplace_back(std::move(loc));
-            }
-            else {
-                return false;
-            }
-        }
-
-        return true;
-    }
-};
-
-template <> struct convert<plantuml> {
-    static bool decode(const Node &node, plantuml &rhs)
-    {
-        if (node["before"])
-            rhs.before = node["before"].as<decltype(rhs.before)>();
-
-        if (node["after"])
-            rhs.after = node["after"].as<decltype(rhs.after)>();
-        return true;
-    }
-};
-
-//
-// filter Yaml decoder
-//
-template <> struct convert<filter> {
-    static bool decode(const Node &node, filter &rhs)
-    {
-        if (node["namespaces"]) {
-            auto namespace_list =
-                node["namespaces"].as<std::vector<std::string>>();
-            for (const auto &ns : namespace_list)
-                rhs.namespaces.push_back({ns});
-        }
-
-        if (node["relationships"])
-            rhs.relationships =
-                node["relationships"].as<decltype(rhs.relationships)>();
-
-        if (node["elements"])
-            rhs.elements = node["elements"].as<decltype(rhs.elements)>();
-
-        if (node["access"])
-            rhs.access = node["access"].as<decltype(rhs.access)>();
-
-        if (node["subclasses"])
-            rhs.subclasses = node["subclasses"].as<decltype(rhs.subclasses)>();
-
-        if (node["specializations"])
-            rhs.specializations =
-                node["specializations"].as<decltype(rhs.specializations)>();
-
-        if (node["dependants"])
-            rhs.dependants = node["dependants"].as<decltype(rhs.dependants)>();
-
-        if (node["dependencies"])
-            rhs.dependencies =
-                node["dependencies"].as<decltype(rhs.dependencies)>();
-
-        if (node["context"])
-            rhs.context = node["context"].as<decltype(rhs.context)>();
-
-        if (node["paths"])
-            rhs.paths = node["paths"].as<decltype(rhs.paths)>();
-
-        return true;
-    }
-};
-
-//
-// generate_links_config Yaml decoder
-//
-template <> struct convert<generate_links_config> {
-    static bool decode(const Node &node, generate_links_config &rhs)
-    {
-        if (node["link"])
-            rhs.link = node["link"].as<decltype(rhs.link)>();
-
-        if (node["tooltip"])
-            rhs.tooltip = node["tooltip"].as<decltype(rhs.tooltip)>();
-
-        return true;
-    }
-};
-
-//
-// git_config Yaml decoder
-//
-template <> struct convert<git_config> {
-    static bool decode(const Node &node, git_config &rhs)
-    {
-        if (node["branch"])
-            rhs.branch = node["branch"].as<decltype(rhs.branch)>();
-
-        if (node["revision"])
-            rhs.revision = node["revision"].as<decltype(rhs.revision)>();
-
-        if (node["commit"])
-            rhs.commit = node["commit"].as<decltype(rhs.commit)>();
-
-        if (node["toplevel"])
-            rhs.toplevel = node["toplevel"].as<decltype(rhs.toplevel)>();
-
-        return true;
-    }
-};
-
-template <typename T> bool decode_diagram(const Node &node, T &rhs)
-{
-    get_option(node, rhs.glob);
-    get_option(node, rhs.using_namespace);
-    get_option(node, rhs.include);
-    get_option(node, rhs.exclude);
-    get_option(node, rhs.puml);
-    get_option(node, rhs.git);
-    get_option(node, rhs.generate_links);
-
-    return true;
-}
-
-//
-// class_diagram Yaml decoder
-//
-template <> struct convert<class_diagram> {
-    static bool decode(const Node &node, class_diagram &rhs)
-    {
-        if (!decode_diagram(node, rhs))
-            return false;
-
-        get_option(node, rhs.classes);
-        get_option(node, rhs.layout);
-        get_option(node, rhs.include_relations_also_as_members);
-        get_option(node, rhs.generate_method_arguments);
-        get_option(node, rhs.generate_packages);
-        get_option(node, rhs.relationship_hints);
-        get_option(node, rhs.template_aliases);
-
-        rhs.initialize_relationship_hints();
-        rhs.initialize_template_aliases();
-
-        return true;
-    }
-};
-
-//
-// sequence_diagram Yaml decoder
-//
-template <> struct convert<sequence_diagram> {
-    static bool decode(const Node &node, sequence_diagram &rhs)
-    {
-        if (!decode_diagram(node, rhs))
-            return false;
-
-        get_option(node, rhs.start_from);
-
-        return true;
-    }
-};
-
-//
-// package_diagram Yaml decoder
-//
-template <> struct convert<package_diagram> {
-    static bool decode(const Node &node, package_diagram &rhs)
-    {
-        if (!decode_diagram(node, rhs))
-            return false;
-
-        get_option(node, rhs.layout);
-
-        return true;
-    }
-};
-
-//
-// include_diagram Yaml decoder
-//
-template <> struct convert<include_diagram> {
-    static bool decode(const Node &node, include_diagram &rhs)
-    {
-        if (!decode_diagram(node, rhs))
-            return false;
-
-        get_option(node, rhs.layout);
-        get_option(node, rhs.relative_to);
-        get_option(node, rhs.generate_system_headers);
-
-        // Convert the path in relative_to to an absolute path, with respect
-        // to the directory where the `.clang-uml` configuration file is located
-        if (rhs.relative_to) {
-            auto absolute_relative_to =
-                std::filesystem::path{node["__parent_path"].as<std::string>()} /
-                rhs.relative_to();
-            rhs.relative_to.set(absolute_relative_to.lexically_normal());
-        }
-
-        return true;
-    }
-};
-
-//
-// layout_hint Yaml decoder
-//
-template <> struct convert<layout_hint> {
-    static bool decode(const Node &node, layout_hint &rhs)
-    {
-        assert(node.Type() == NodeType::Map);
-
-        if (node["up"]) {
-            rhs.hint = hint_t::up;
-            rhs.entity = node["up"].as<std::string>();
-        }
-        else if (node["down"]) {
-            rhs.hint = hint_t::down;
-            rhs.entity = node["down"].as<std::string>();
-        }
-        else if (node["left"]) {
-            rhs.hint = hint_t::left;
-            rhs.entity = node["left"].as<std::string>();
-        }
-        else if (node["right"]) {
-            rhs.hint = hint_t::right;
-            rhs.entity = node["right"].as<std::string>();
-        }
-        else
-            return false;
-
-        return true;
-    }
-};
-
-//
-// relationship_hint_t Yaml decoder
-//
-template <> struct convert<relationship_hint_t> {
-    static bool decode(const Node &node, relationship_hint_t &rhs)
-    {
-        assert(node.Type() == NodeType::Map || node.Type() == NodeType::Scalar);
-
-        if (node.Type() == NodeType::Scalar) {
-            // This will be default relationship hint for all arguments
-            // of this template (useful for instance for tuples)
-            rhs.default_hint = node.as<relationship_t>();
-        }
-        else {
-            for (const auto &it : node) {
-                auto key = it.first.as<std::string>();
-                if (key == "default") {
-                    rhs.default_hint = node["default"].as<relationship_t>();
-                }
-                else {
-                    try {
-                        auto index = stoul(key);
-                        rhs.argument_hints[index] =
-                            it.second.as<relationship_t>();
-                    }
-                    catch (std::exception &e) {
-                        return false;
-                    }
-                }
-            }
-        }
-
-        return true;
-    }
-};
-
-//
-// config Yaml decoder
-//
-template <> struct convert<config> {
-
-    static bool decode(const Node &node, config &rhs)
-    {
-        get_option(node, rhs.glob);
-        get_option(node, rhs.using_namespace);
-        get_option(node, rhs.output_directory);
-        get_option(node, rhs.compilation_database_dir);
-        get_option(node, rhs.include_relations_also_as_members);
-        get_option(node, rhs.puml);
-        get_option(node, rhs.generate_method_arguments);
-        get_option(node, rhs.generate_packages);
-        get_option(node, rhs.generate_links);
-        get_option(node, rhs.generate_system_headers);
-        get_option(node, rhs.git);
-        rhs.base_directory.set(node["__parent_path"].as<std::string>());
-        get_option(node, rhs.relative_to);
-
-        auto diagrams = node["diagrams"];
-
-        assert(diagrams.Type() == NodeType::Map);
-
-        for (auto d : diagrams) {
-            auto name = d.first.as<std::string>();
-            std::shared_ptr<clanguml::config::diagram> diagram_config{};
-            auto parent_path = node["__parent_path"].as<std::string>();
-
-            if (has_key(d.second, "include!")) {
-                auto include_path = std::filesystem::path{parent_path};
-                include_path /= d.second["include!"].as<std::string>();
-
-                YAML::Node node = YAML::LoadFile(include_path.string());
-                node.force_insert("__parent_path", parent_path);
-
-                diagram_config = parse_diagram_config(node);
-            }
-            else {
-                d.second.force_insert("__parent_path", parent_path);
-                diagram_config = parse_diagram_config(d.second);
-            }
-
-            if (diagram_config) {
-                diagram_config->name = name;
-                diagram_config->inherit(rhs);
-                rhs.diagrams[name] = diagram_config;
-            }
-            else {
-                return false;
-            }
-        }
-
-        return true;
-    }
-};
-}
+} // namespace clanguml::config

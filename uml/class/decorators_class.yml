@@ -1,0 +1,10 @@
+type: class
+title: Diagram element decorators model
+include_relations_also_as_members: false
+glob:
+  - src/decorators/decorators.cc
+include:
+  namespaces:
+    - clanguml::decorators
+using_namespace:
+  - clanguml::decorators

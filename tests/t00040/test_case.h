@@ -1,7 +1,7 @@
 /**
- * tests/t00040/test_case.cc
+ * tests/t00040/test_case.h
  *
- * Copyright (c) 2021-2022 Bartek Kryza <bkryza@gmail.com>
+ * Copyright (c) 2021-2024 Bartek Kryza <bkryza@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,35 +16,20 @@
  * limitations under the License.
  */
 
-TEST_CASE("t00040", "[test-case][class]")
+TEST_CASE("t00040")
 {
-    auto [config, db] = load_config("t00040");
+    using namespace clanguml::test;
 
-    auto diagram = config.diagrams["t00040_class"];
+    auto [config, db, diagram, model] =
+        CHECK_CLASS_MODEL("t00040", "t00040_class");
 
-    REQUIRE(diagram->name == "t00040_class");
-    REQUIRE(diagram->generate_packages() == false);
-
-    auto model = generate_class_diagram(db, diagram);
-
-    REQUIRE(model->name() == "t00040_class");
-
-    auto puml = generate_class_puml(diagram, *model);
-    AliasMatcher _A(puml);
-
-    REQUIRE_THAT(puml, StartsWith("@startuml"));
-    REQUIRE_THAT(puml, EndsWith("@enduml\n"));
-
-    REQUIRE_THAT(puml, IsClass(_A("A")));
-    REQUIRE_THAT(puml, IsClass(_A("AA")));
-    REQUIRE_THAT(puml, IsClass(_A("AAA")));
-    REQUIRE_THAT(puml, IsBaseClass(_A("A"), _A("AA")));
-    REQUIRE_THAT(puml, IsBaseClass(_A("AA"), _A("AAA")));
-
-    REQUIRE_THAT(puml, !IsClass(_A("B")));
-
-    REQUIRE_THAT(puml, !IsDependency(_A("R"), _A("A")));
-
-    save_puml(
-        "./" + config.output_directory() + "/" + diagram->name + ".puml", puml);
+    CHECK_CLASS_DIAGRAM(*config, diagram, *model, [](const auto &src) {
+        REQUIRE(IsClass(src, "A"));
+        REQUIRE(IsClass(src, "AA"));
+        REQUIRE(IsClass(src, "AAA"));
+        REQUIRE(IsBaseClass(src, "A", "AA"));
+        REQUIRE(IsBaseClass(src, "AA", "AAA"));
+        REQUIRE(!IsClass(src, "B"));
+        REQUIRE(!IsDependency(src, "R", "A"));
+    });
 }

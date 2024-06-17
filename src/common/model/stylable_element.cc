@@ -1,7 +1,7 @@
 /**
- * src/common/model/stylable_element.cc
+ * @file src/common/model/stylable_element.cc
  *
- * Copyright (c) 2021-2022 Bartek Kryza <bkryza@gmail.com>
+ * Copyright (c) 2021-2024 Bartek Kryza <bkryza@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,6 @@ namespace clanguml::common::model {
 
 void stylable_element::set_style(const std::string &style) { style_ = style; }
 
-std::string stylable_element::style() const { return style_; }
+std::optional<std::string> stylable_element::style() const { return style_; }
 
 }

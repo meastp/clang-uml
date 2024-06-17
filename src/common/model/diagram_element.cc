@@ -1,7 +1,7 @@
 /**
- * src/common/model/diagram_element.cc
+ * @file src/common/model/diagram_element.cc
  *
- * Copyright (c) 2021-2022 Bartek Kryza <bkryza@gmail.com>
+ * Copyright (c) 2021-2024 Bartek Kryza <bkryza@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,39 +24,45 @@
 
 namespace clanguml::common::model {
 
-std::atomic_uint64_t diagram_element::m_nextId = 1;
+diagram_element::diagram_element() = default;
 
-diagram_element::diagram_element()
-    : m_id{m_nextId++}
+const eid_t &diagram_element::id() const { return id_; }
+
+void diagram_element::set_id(eid_t id) { id_ = id; }
+
+std::optional<eid_t> diagram_element::parent_element_id() const
 {
+    return parent_element_id_;
+}
+
+void diagram_element::set_parent_element_id(eid_t id)
+{
+    parent_element_id_ = id;
 }
 
 std::string diagram_element::alias() const
 {
-    return fmt::format("C_{:010}", m_id);
+    // Only generate alias for global id's
+    assert(id_.is_global());
+
+    return fmt::format("C_{:022}", id_.value());
 }
 
 void diagram_element::add_relationship(relationship &&cr)
 {
-    if (cr.destination().empty()) {
-        LOG_DBG("Skipping relationship '{}' - {} - '{}' due empty "
-                "destination",
-            cr.destination(), to_string(cr.type()), full_name(true));
-        return;
-    }
-
     if ((cr.type() == relationship_t::kInstantiation) &&
-        (cr.destination() == full_name(true))) {
+        (cr.destination() == id())) {
         LOG_DBG("Skipping self instantiation relationship for {}",
             cr.destination());
         return;
     }
 
-    LOG_DBG("Adding relationship: '{}' - {} - '{}'", cr.destination(),
-        to_string(cr.type()), full_name(true));
+    if (!util::contains(relationships_, cr)) {
+        LOG_DBG("Adding relationship from: '{}' ({}) - {} - '{}'", id(),
+            full_name(true), to_string(cr.type()), cr.destination());
 
-    if (!util::contains(relationships_, cr))
         relationships_.emplace_back(std::move(cr));
+    }
 }
 
 std::vector<relationship> &diagram_element::relationships()
@@ -78,15 +84,27 @@ inja::json diagram_element::context() const
 {
     inja::json ctx;
     ctx["name"] = name();
+    ctx["type"] = type_name();
     ctx["alias"] = alias();
     ctx["full_name"] = full_name(false);
+    auto maybe_doxygen_link = doxygen_link();
+    if (maybe_doxygen_link)
+        ctx["doxygen_link"] = maybe_doxygen_link.value();
 
     return ctx;
 }
 
+bool diagram_element::is_nested() const { return nested_; }
+
+void diagram_element::nested(bool nested) { nested_ = nested; }
+
+bool diagram_element::complete() const { return complete_; }
+
+void diagram_element::complete(bool completed) { complete_ = completed; }
+
 bool operator==(const diagram_element &l, const diagram_element &r)
 {
-    return l.full_name(false) == r.full_name(false);
+    return l.id() == r.id();
 }
 
 std::ostream &operator<<(std::ostream &out, const diagram_element &rhs)
@@ -96,4 +114,4 @@ std::ostream &operator<<(std::ostream &out, const diagram_element &rhs)
     return out;
 }
 
-}
+} // namespace clanguml::common::model

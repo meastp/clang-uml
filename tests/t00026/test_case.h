@@ -1,7 +1,7 @@
 /**
- * tests/t00026/test_case.cc
+ * tests/t00026/test_case.h
  *
- * Copyright (c) 2021-2022 Bartek Kryza <bkryza@gmail.com>
+ * Copyright (c) 2021-2024 Bartek Kryza <bkryza@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,32 +16,22 @@
  * limitations under the License.
  */
 
-TEST_CASE("t00026", "[test-case][class]")
+TEST_CASE("t00026")
 {
-    auto [config, db] = load_config("t00026");
+    using namespace clanguml::test;
 
-    auto diagram = config.diagrams["t00026_class"];
+    auto [config, db, diagram, model] =
+        CHECK_CLASS_MODEL("t00026", "t00026_class");
 
-    REQUIRE(diagram->name == "t00026_class");
+    CHECK_CLASS_DIAGRAM(*config, diagram, *model, [](const auto &src) {
+        REQUIRE(IsClassTemplate(src, "Memento<T>"));
+        REQUIRE(IsClassTemplate(src, "Originator<T>"));
+        REQUIRE(IsClassTemplate(src, "Caretaker<T>"));
 
-    auto model = generate_class_diagram(db, diagram);
-
-    REQUIRE(model->name() == "t00026_class");
-    REQUIRE(model->should_include("clanguml::t00026::A"));
-
-    auto puml = generate_class_puml(diagram, *model);
-    AliasMatcher _A(puml);
-
-    REQUIRE_THAT(puml, StartsWith("@startuml"));
-    REQUIRE_THAT(puml, EndsWith("@enduml\n"));
-    REQUIRE_THAT(puml, IsClassTemplate("Memento", "T"));
-    REQUIRE_THAT(puml, IsClassTemplate("Originator", "T"));
-    REQUIRE_THAT(puml, IsClassTemplate("Caretaker", "T"));
-    REQUIRE_THAT(puml,
-        IsInstantiation(_A("Originator<T>"), _A("Originator<std::string>")));
-    REQUIRE_THAT(puml,
-        IsInstantiation(_A("Caretaker<T>"), _A("Caretaker<std::string>")));
-
-    save_puml(
-        "./" + config.output_directory() + "/" + diagram->name + ".puml", puml);
+        REQUIRE(
+            IsInstantiation(src, "Originator<T>", "Originator<std::string>"));
+        REQUIRE(
+            IsInstantiation(src, "Originator<T>", "Originator<std::string>"));
+        REQUIRE(IsInstantiation(src, "Caretaker<T>", "Caretaker<std::string>"));
+    });
 }

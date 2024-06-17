@@ -1,7 +1,7 @@
 /**
- * src/class_diagram/model/class_member.cc
+ * @file src/class_diagram/model/class_member.cc
  *
- * Copyright (c) 2021-2022 Bartek Kryza <bkryza@gmail.com>
+ * Copyright (c) 2021-2024 Bartek Kryza <bkryza@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,15 +26,18 @@ class_member::class_member(common::model::access_t access,
 {
 }
 
-bool class_member::is_relationship() const { return is_relationship_; }
-
-void class_member::is_relationship(bool is_relationship)
-{
-    is_relationship_ = is_relationship;
-}
-
 bool class_member::is_static() const { return is_static_; }
 
 void class_member::is_static(bool is_static) { is_static_ = is_static; }
 
+void class_member::set_destination_multiplicity(std::optional<size_t> m)
+{
+    destination_multiplicity_ = m;
 }
+
+std::optional<size_t> class_member::destination_multiplicity() const
+{
+    return destination_multiplicity_;
+}
+
+} // namespace clanguml::class_diagram::model

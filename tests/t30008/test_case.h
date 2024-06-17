@@ -1,7 +1,7 @@
 /**
  * tests/t30008/test_case.cc
  *
- * Copyright (c) 2021-2022 Bartek Kryza <bkryza@gmail.com>
+ * Copyright (c) 2021-2024 Bartek Kryza <bkryza@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,40 +16,29 @@
  * limitations under the License.
  */
 
-TEST_CASE("t30008", "[test-case][package]")
+TEST_CASE("t30008")
 {
-    auto [config, db] = load_config("t30008");
+    using namespace clanguml::test;
+    using namespace std::string_literals;
 
-    auto diagram = config.diagrams["t30008_package"];
+    auto [config, db, diagram, model] =
+        CHECK_PACKAGE_MODEL("t30008", "t30008_package");
 
-    REQUIRE(diagram->name == "t30008_package");
+    CHECK_PACKAGE_DIAGRAM(*config, diagram, *model, [](const auto &src) {
+        REQUIRE(IsNamespacePackage(src, "dependants"s, "A"s));
+        REQUIRE(IsNamespacePackage(src, "dependants"s, "B"s));
+        REQUIRE(IsNamespacePackage(src, "dependants"s, "C"s));
+        REQUIRE(!IsNamespacePackage(src, "dependants"s, "X"s));
 
-    auto model = generate_package_diagram(db, diagram);
+        REQUIRE(IsDependency(src, "B", "A"));
+        REQUIRE(IsDependency(src, "C", "B"));
 
-    REQUIRE(model->name() == "t30008_package");
+        REQUIRE(IsNamespacePackage(src, "dependencies"s, "D"s));
+        REQUIRE(IsNamespacePackage(src, "dependencies"s, "E"s));
+        REQUIRE(IsNamespacePackage(src, "dependencies"s, "F"s));
+        REQUIRE(!IsNamespacePackage(src, "dependencies"s, "Y"s));
 
-    auto puml = generate_package_puml(diagram, *model);
-    AliasMatcher _A(puml);
-
-    REQUIRE_THAT(puml, StartsWith("@startuml"));
-    REQUIRE_THAT(puml, EndsWith("@enduml\n"));
-
-    REQUIRE_THAT(puml, IsPackage("A"));
-    REQUIRE_THAT(puml, IsPackage("B"));
-    REQUIRE_THAT(puml, IsPackage("C"));
-    REQUIRE_THAT(puml, !IsPackage("X"));
-
-    REQUIRE_THAT(puml, IsDependency(_A("B"), _A("A")));
-    REQUIRE_THAT(puml, IsDependency(_A("C"), _A("B")));
-
-    REQUIRE_THAT(puml, IsPackage("D"));
-    REQUIRE_THAT(puml, IsPackage("E"));
-    REQUIRE_THAT(puml, IsPackage("F"));
-    REQUIRE_THAT(puml, !IsPackage("Y"));
-
-    REQUIRE_THAT(puml, IsDependency(_A("E"), _A("D")));
-    REQUIRE_THAT(puml, IsDependency(_A("F"), _A("E")));
-
-    save_puml(
-        "./" + config.output_directory() + "/" + diagram->name + ".puml", puml);
+        REQUIRE(IsDependency(src, "E", "D"));
+        REQUIRE(IsDependency(src, "F", "E"));
+    });
 }

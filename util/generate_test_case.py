@@ -3,7 +3,7 @@
 ##
 ## util/generate_test_case.py
 ##
-## Copyright (c) 2021-2022 Bartek Kryza <bkryza@gmail.com>
+## Copyright (c) 2021-2024 Bartek Kryza <bkryza@gmail.com>
 ##
 ## Licensed under the Apache License, Version 2.0 (the "License");
 ## you may not use this file except in compliance with the License.
@@ -25,57 +25,68 @@ import jinja2
 TEST_CASE_MULTIPLIER = 10000
 
 CLASS_DIAGRAM_TEST_CASE_EXAMPLES = """
-    // Check if all classes exist
-    //REQUIRE_THAT(puml, IsClass(_A("A")));
-    
-    // Check if class templates exist
-    //REQUIRE_THAT(puml, IsClassTemplate("A", "T,P,CMP,int N"));
-    
-    // Check if all enums exist
-    //REQUIRE_THAT(puml, IsEnum(_A("Lights")));
-    
-    // Check if all inner classes exist
-    //REQUIRE_THAT(puml, IsInnerClass(_A("A"), _A("AA")));
+    CHECK_CLASS_DIAGRAM(*config, diagram, *model, [](const auto &src) {
+            // REQUIRE(HasTitle(src, "Basic class diagram example"));
 
-    // Check if all inheritance relationships exist
-    //REQUIRE_THAT(puml, IsBaseClass(_A("Base"), _A("Child")));
-    
-    // Check if all methods exist
-    //REQUIRE_THAT(puml, (IsMethod<Public, Const>("foo")));
-    
-    // Check if all fields exist
-    //REQUIRE_THAT(puml, (IsField<Private>("private_member", "int")));
-    
-    // Check if all relationships exist
-    //REQUIRE_THAT(puml, IsAssociation(_A("D"), _A("A"), "-as"));
-    //REQUIRE_THAT(puml, IsDependency(_A("R"), _A("B")));
-    //REQUIRE_THAT(puml, IsAggregation(_A("R"), _A("D")));
-    //REQUIRE_THAT(puml, IsComposition(_A("R"), _A("D")));
-    //REQUIRE_THAT(puml, IsInstantiation(_A("ABCD::F<T>"), _A("F<int>")));
+            // REQUIRE(!IsClass(src, "NOSUCHCLASS"));
+            // REQUIRE(IsAbstractClass(src, "A"));
+            // REQUIRE(IsClass(src, "B"));
+            // REQUIRE(IsBaseClass(src, "A", "B"));
+
+            // REQUIRE(IsMethod<Public, Abstract>(src, "A", "foo_a"));
+
+            // REQUIRE(IsAssociation<Private>(src, "D", "A", "as"));
+
+            // REQUIRE(HasNote(src, "A", "left", "This is class A"));
+        });
 """
 
 SEQUENCE_DIAGRAM_TEST_CASE_EXAMPLES = """
-    // Check if all calls exist
-    //REQUIRE_THAT(puml, HasCall("A", "log_result"));
-    //REQUIRE_THAT(puml, HasCallWithResponse("B", "A", "add3"));
+    CHECK_SEQUENCE_DIAGRAM(
+       *config, diagram, *model,
+        [](const auto &src) {
+            // REQUIRE(HasTitle(src, "Basic sequence diagram example"));
+
+            REQUIRE(MessageOrder(src,
+                 {
+                     //
+                    // {"tmain()", "A", "A()"},    //
+                    // {"B", "A", "log_result(int)", Static{}}     //
+                }));
+
+            // REQUIRE(!HasMessage(src, {"A", {"detail", "C"}, "add(int,int)"}));
+
+            // REQUIRE(HasComment(src, "t20001 test diagram of type sequence"));
+
+            // REQUIRE(HasMessageComment(src, "tmain()", "Just add 2 numbers"));
+        });
 """
 
 PACKAGE_DIAGRAM_TEST_CASE_EXAMPLES = """
-    // Check if all packages exist
-    //REQUIRE_THAT(puml, IsPackage("ns1"));
+    CHECK_PACKAGE_DIAGRAM(*config, diagram, *model, [](const auto &src) {
+        // REQUIRE(IsNamespacePackage(src, "A"s, "AA"s));
+
+        // REQUIRE(IsNamespacePackage(src, "B"s, "BB"s, "BBB"s));
+
+        // REQUIRE(IsDependency(src, "BBB", "A1"));
+    });
 """
 
 INCLUDE_DIAGRAM_TEST_CASE_EXAMPLES = """
-    // Check all folders exist
-    //REQUIRE_THAT(puml, IsFolder("lib1"));
-    
-    // Check if all files exist
-    //REQUIRE_THAT(puml, IsFile("lib1.h"));
-    
-    // Check if all includes exists
-    //REQUIRE_THAT(puml, IsAssociation(_A("t40002.cc"), _A("lib1.h")));
-    //REQUIRE_THAT(puml, IsDependency(_A("t40001_include1.h"), _A("string")));
+    CHECK_INCLUDE_DIAGRAM(config, diagram, *model, [](const auto &src) {
+        // REQUIRE(IsFolder(src, "include/lib1"));
+        // REQUIRE(IsFile(src, "include/lib1/lib1.h"));
+
+        // REQUIRE(IsSystemHeader(src, "string"));
+
+        // REQUIRE(IsHeaderDependency(
+        //    src, "src/t40001.cc", "include/t40001_include1.h"));
+
+        // REQUIRE(IsSystemHeaderDependency(
+        //    src, "include/t40001_include1.h", "string"));
+    });
 """
+
 
 def test_case_already_exists(name):
     return os.path.isdir(os.path.join(os.path.dirname(__file__), '..', name))
@@ -146,7 +157,10 @@ def main(args):
 
     examples = examples_for_type(test_case_type)
 
-    variables = dict(type = test_case_type, name = test_case_name, examples = examples)
+    variables = dict(type = test_case_type,
+                     TYPE = test_case_type.upper(),
+                     name = test_case_name,
+                     examples = examples)
 
     generate(environment, variables, '.clang-uml', '.clang-uml', test_case_directory)
     generate(environment, variables, 't00000.cc', f'{test_case_name}.cc', test_case_directory)

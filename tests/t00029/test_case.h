@@ -1,7 +1,7 @@
 /**
  * tests/t00029/test_case.cc
  *
- * Copyright (c) 2021-2022 Bartek Kryza <bkryza@gmail.com>
+ * Copyright (c) 2021-2024 Bartek Kryza <bkryza@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,43 +16,32 @@
  * limitations under the License.
  */
 
-TEST_CASE("t00029", "[test-case][class]")
+TEST_CASE("t00029")
 {
-    auto [config, db] = load_config("t00029");
+    using namespace clanguml::test;
 
-    auto diagram = config.diagrams["t00029_class"];
-
-    REQUIRE(diagram->name == "t00029_class");
-
-    auto model = generate_class_diagram(db, diagram);
+    auto [config, db, diagram, model] =
+        CHECK_CLASS_MODEL("t00029", "t00029_class");
 
     REQUIRE(model->name() == "t00029_class");
-    REQUIRE(model->should_include("clanguml::t00029::A"));
 
-    auto puml = generate_class_puml(diagram, *model);
-    AliasMatcher _A(puml);
+    CHECK_CLASS_DIAGRAM(*config, diagram, *model, [](const auto &src) {
+        REQUIRE(IsClass(src, "A"));
+        REQUIRE(!IsClass(src, "B"));
+        REQUIRE(IsClassTemplate(src, "C<T>"));
+        REQUIRE(!IsClassTemplate(src, "D<T>"));
+        REQUIRE(IsEnum(src, "E"));
+        REQUIRE(!IsEnum(src, "F"));
+        REQUIRE(IsClass(src, "G1"));
+        REQUIRE(IsClass(src, "G2"));
+        REQUIRE(IsClass(src, "G3"));
+        REQUIRE(IsClass(src, "G4"));
 
-    REQUIRE_THAT(puml, StartsWith("@startuml"));
-    REQUIRE_THAT(puml, EndsWith("@enduml\n"));
+        REQUIRE(IsClass(src, "R"));
 
-    REQUIRE_THAT(puml, IsClass(_A("A")));
-    REQUIRE_THAT(puml, !IsClass(_A("B")));
-    REQUIRE_THAT(puml, IsClassTemplate("C", "T"));
-    REQUIRE_THAT(puml, !IsClassTemplate("D", "T"));
-    REQUIRE_THAT(puml, IsEnum(_A("E")));
-    REQUIRE_THAT(puml, !IsEnum(_A("F")));
-    REQUIRE_THAT(puml, IsClass(_A("G1")));
-    REQUIRE_THAT(puml, IsClass(_A("G2")));
-    REQUIRE_THAT(puml, IsClass(_A("G3")));
-    REQUIRE_THAT(puml, IsClass(_A("G4")));
-
-    REQUIRE_THAT(puml, IsClass(_A("R")));
-
-    REQUIRE_THAT(puml, IsAggregation(_A("R"), _A("G1"), "+g1"));
-    REQUIRE_THAT(puml, !IsAggregation(_A("R"), _A("G2"), "+g2"));
-    REQUIRE_THAT(puml, !IsAggregation(_A("R"), _A("G3"), "+g3"));
-    REQUIRE_THAT(puml, IsAssociation(_A("R"), _A("G4"), "+g4"));
-
-    save_puml(
-        "./" + config.output_directory() + "/" + diagram->name + ".puml", puml);
+        REQUIRE(IsAggregation<Public>(src, "R", "G1", "g1"));
+        REQUIRE(!IsAggregation<Public>(src, "R", "G2", "g2"));
+        REQUIRE(!IsAggregation<Public>(src, "R", "G3", "g3"));
+        REQUIRE(IsAssociation<Public>(src, "R", "G4", "g4"));
+    });
 }

@@ -1,7 +1,7 @@
 /**
- * src/common/model/namespace.h
+ * @file src/common/model/namespace.h
  *
- * Copyright (c) 2021-2022 Bartek Kryza <bkryza@gmail.com>
+ * Copyright (c) 2021-2024 Bartek Kryza <bkryza@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@
 
 #include "path.h"
 
+#include <optional>
 #include <string>
-#include <type_safe/optional.hpp>
 #include <vector>
 
 namespace clanguml::common::model {
@@ -29,7 +29,7 @@ struct ns_path_separator {
     static constexpr std::string_view value = "::";
 };
 
-using namespace_ = path<ns_path_separator>;
+using namespace_ = path;
 
 }
 
@@ -42,12 +42,12 @@ template <> struct hash<clanguml::common::model::namespace_> {
 
         std::size_t seed = key.size();
         for (const auto &ns : key) {
-            seed ^= std::hash<std::string>{}(ns) + 0x6a3712b5 + (seed << 6) +
-                (seed >> 2);
+            seed ^=
+                std::hash<std::string>{}(ns) + clanguml::util::hash_seed(seed);
         }
 
         return seed;
     }
 };
 
-}
+} // namespace std

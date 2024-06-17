@@ -1,7 +1,7 @@
 /**
- * src/package_diagram/visitor/translation_unit_visitor.h
+ * @file src/package_diagram/visitor/translation_unit_visitor.h
  *
- * Copyright (c) 2021-2022 Bartek Kryza <bkryza@gmail.com>
+ * Copyright (c) 2021-2024 Bartek Kryza <bkryza@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,21 +17,12 @@
  */
 #pragma once
 
+#include "common/visitor/translation_unit_visitor.h"
 #include "config/config.h"
 #include "package_diagram/model/diagram.h"
-#include "package_diagram/visitor/translation_unit_context.h"
 
-#include <clang-c/CXCompilationDatabase.h>
-#include <clang-c/Index.h>
-#include <cppast/cpp_friend.hpp>
-#include <cppast/cpp_function_template.hpp>
-#include <cppast/cpp_member_function.hpp>
-#include <cppast/cpp_member_variable.hpp>
-#include <cppast/cpp_template.hpp>
-#include <cppast/cpp_template_parameter.hpp>
-#include <cppast/cpp_type.hpp>
-#include <cppast/visitor.hpp>
-#include <type_safe/reference.hpp>
+#include <clang/AST/RecursiveASTVisitor.h>
+#include <clang/Basic/SourceManager.h>
 
 #include <common/model/enums.h>
 #include <common/model/package.h>
@@ -42,34 +33,178 @@
 
 namespace clanguml::package_diagram::visitor {
 
-class translation_unit_visitor {
+using clanguml::common::eid_t;
+
+using found_relationships_t =
+    std::vector<std::pair<eid_t, common::model::relationship_t>>;
+
+using visitor_specialization_t =
+    common::visitor::translation_unit_visitor<clanguml::config::package_diagram,
+        clanguml::package_diagram::model::diagram>;
+
+/**
+ * @brief Package diagram translation unit visitor
+ *
+ * This class implements the `clang::RecursiveASTVisitor` interface
+ * for selected visitors relevant to generating package diagrams.
+ */
+class translation_unit_visitor
+    : public clang::RecursiveASTVisitor<translation_unit_visitor>,
+      public visitor_specialization_t {
 public:
-    translation_unit_visitor(cppast::cpp_entity_index &idx,
+    /**
+     * @brief Constructor.
+     *
+     * @param sm Current source manager reference
+     * @param diagram Diagram model
+     * @param config Diagram configuration
+     */
+    translation_unit_visitor(clang::SourceManager &sm,
         clanguml::package_diagram::model::diagram &diagram,
         const clanguml::config::package_diagram &config);
 
-    void operator()(const cppast::cpp_entity &file);
+    ~translation_unit_visitor() override = default;
 
-    void process_class_declaration(const cppast::cpp_class &cls,
-        type_safe::optional_ref<const cppast::cpp_template_specialization>
-            tspec = nullptr);
+    /**
+     * \defgroup Implementation of ResursiveASTVisitor methods
+     * @{
+     */
+    virtual bool VisitNamespaceDecl(clang::NamespaceDecl *ns);
 
-    void process_function(
-        const cppast::cpp_function &f, bool skip_return_type = false);
+    virtual bool VisitEnumDecl(clang::EnumDecl *decl);
 
-    bool find_relationships(const cppast::cpp_type &t_,
-        std::vector<std::pair<std::string, common::model::relationship_t>>
-            &relationships,
-        common::model::relationship_t relationship_hint);
+    virtual bool VisitCXXRecordDecl(clang::CXXRecordDecl *cls);
+
+    virtual bool VisitRecordDecl(clang::RecordDecl *cls);
+
+    virtual bool VisitClassTemplateDecl(clang::ClassTemplateDecl *decl);
+
+    virtual bool VisitFunctionDecl(clang::FunctionDecl *function_declaration);
+    /** @} */
+
+    /**
+     * @brief Finalize diagram model
+     */
+    void finalize();
 
 private:
     /**
-     * Try to resolve a type instance into a type referenced through an alias.
-     * If t does not represent an alias, returns t.
+     * @brief Get global package id for declaration.
+     *
+     * This method calculates package diagram id based on either the namespace
+     * of the provided declaration or filesystem path of the source file
+     * where it was declared - depending on the diagram configuration.
+     *
+     * This is necessary to infer dependency relationships between packages.
+     *
+     * @param cls C++ entity declaration
+     * @return Id of the package containing that declaration
      */
-    const cppast::cpp_type &resolve_alias(const cppast::cpp_type &t);
+    eid_t get_package_id(const clang::Decl *cls);
 
-    // ctx allows to track current visitor context, e.g. current namespace
-    translation_unit_context ctx;
+    /**
+     * @brief Process class declaration
+     *
+     * @param cls Class declaration
+     * @param relationships List of relationships discovered from this class
+     */
+    void process_class_declaration(
+        const clang::CXXRecordDecl &cls, found_relationships_t &relationships);
+
+    /**
+     * @brief Process class children
+     *
+     * @param cls Class declaration
+     * @param relationships List of relationships discovered from this class
+     */
+    void process_class_children(
+        const clang::CXXRecordDecl &cls, found_relationships_t &relationships);
+
+    /**
+     * @brief Process record children
+     *
+     * @param cls Record declaration
+     * @param relationships List of relationships discovered from this class
+     */
+    void process_record_children(
+        const clang::RecordDecl &cls, found_relationships_t &relationships);
+
+    /**
+     * @brief Process record bases
+     *
+     * @param cls Class declaration
+     * @param relationships List of relationships discovered from this class
+     */
+    void process_class_bases(
+        const clang::CXXRecordDecl &cls, found_relationships_t &relationships);
+
+    /**
+     * @brief Process method declaration
+     *
+     * @param method Method declaration
+     * @param relationships List of relationships discovered from this method
+     */
+    void process_method(const clang::CXXMethodDecl &method,
+        found_relationships_t &relationships);
+
+    /**
+     * @brief Process template method declaration
+     *
+     * @param method Method declaration
+     * @param relationships List of relationships discovered from this method
+     */
+    void process_template_method(const clang::FunctionTemplateDecl &method,
+        found_relationships_t &relationships);
+
+    /**
+     * @brief Process member field
+     *
+     * @param field_declaration Field declaration
+     * @param relationships List of relationships discovered from this field
+     */
+    void process_field(const clang::FieldDecl &field_declaration,
+        found_relationships_t &relationships);
+
+    /**
+     * @brief Process static member field
+     *
+     * @param field_declaration Field declaration
+     * @param relationships List of relationships discovered from this field
+     */
+    void process_static_field(const clang::VarDecl &field_declaration,
+        found_relationships_t &relationships);
+
+    /**
+     * @brief Process friend declaration
+     *
+     * @param friend_declaration Field declaration
+     * @param relationships List of relationships discovered from this friend
+     */
+    void process_friend(const clang::FriendDecl &friend_declaration,
+        found_relationships_t &relationships);
+
+    /**
+     * @brief Process type
+     *
+     * @param type Reference to some C++ type
+     * @param relationships List of relationships discovered from this friend
+     * @param relationship_hint Default relationship type for discovered
+     *                          relationships
+     */
+    bool find_relationships(const clang::QualType &type,
+        found_relationships_t &relationships,
+        common::model::relationship_t relationship_hint =
+            common::model::relationship_t::kDependency);
+
+    /**
+     * @brief Add discovered relationships for `cls` to the diagram.
+     *
+     * @param cls C/C++ entity declaration
+     * @param relationships List of discovered relationships
+     */
+    void add_relationships(
+        clang::Decl *cls, found_relationships_t &relationships);
+
+    std::vector<eid_t> get_parent_package_ids(eid_t id);
 };
-}
+} // namespace clanguml::package_diagram::visitor

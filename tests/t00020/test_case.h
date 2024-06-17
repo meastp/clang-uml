@@ -1,7 +1,7 @@
 /**
- * tests/t00020/test_case.cc
+ * tests/t00020/test_case.h
  *
- * Copyright (c) 2021-2022 Bartek Kryza <bkryza@gmail.com>
+ * Copyright (c) 2021-2024 Bartek Kryza <bkryza@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,34 +16,36 @@
  * limitations under the License.
  */
 
-TEST_CASE("t00020", "[test-case][class]")
+TEST_CASE("t00020")
 {
-    auto [config, db] = load_config("t00020");
+    using namespace clanguml::test;
 
-    auto diagram = config.diagrams["t00020_class"];
+    auto [config, db, diagram, model] =
+        CHECK_CLASS_MODEL("t00020", "t00020_class");
 
-    REQUIRE(diagram->name == "t00020_class");
-
-    auto model = generate_class_diagram(db, diagram);
-
-    REQUIRE(model->name() == "t00020_class");
-    REQUIRE(model->should_include("clanguml::t00020::ProductA"));
-
-    auto puml = generate_class_puml(diagram, *model);
-    AliasMatcher _A(puml);
-
-    REQUIRE_THAT(puml, StartsWith("@startuml"));
-    REQUIRE_THAT(puml, EndsWith("@enduml\n"));
-    REQUIRE_THAT(puml, IsAbstractClass(_A("ProductA")));
-    REQUIRE_THAT(puml, IsAbstractClass(_A("ProductB")));
-    REQUIRE_THAT(puml, IsClass(_A("ProductA1")));
-    REQUIRE_THAT(puml, IsClass(_A("ProductA2")));
-    REQUIRE_THAT(puml, IsClass(_A("ProductB1")));
-    REQUIRE_THAT(puml, IsClass(_A("ProductB2")));
-    REQUIRE_THAT(puml, IsAbstractClass(_A("AbstractFactory")));
-    REQUIRE_THAT(puml, IsClass(_A("Factory1")));
-    REQUIRE_THAT(puml, IsClass(_A("Factory2")));
-
-    save_puml(
-        "./" + config.output_directory() + "/" + diagram->name + ".puml", puml);
+    CHECK_CLASS_DIAGRAM(
+        *config, diagram, *model,
+        [](const auto &src) {
+            REQUIRE(IsAbstractClass(src, "AbstractFactory"));
+            REQUIRE(IsAbstractClass(src, "ProductA"));
+            REQUIRE(IsAbstractClass(src, "ProductB"));
+            REQUIRE(IsClass(src, "ProductA1"));
+            REQUIRE(IsClass(src, "ProductA2"));
+            REQUIRE(IsClass(src, "ProductB1"));
+            REQUIRE(IsClass(src, "ProductB2"));
+            REQUIRE(IsClass(src, "Factory1"));
+            REQUIRE(IsClass(src, "Factory2"));
+        },
+        [](const plantuml_t &src) {
+            REQUIRE(IsDependency(src, "Factory1", "ProductA1"));
+            REQUIRE(IsDependency(src, "Factory1", "ProductB1"));
+            REQUIRE(IsDependency(src, "Factory2", "ProductA2"));
+            REQUIRE(IsDependency(src, "Factory2", "ProductB2"));
+        },
+        [](const mermaid_t &src) {
+            REQUIRE(IsDependency(src, "Factory1", "ProductA1"));
+            REQUIRE(IsDependency(src, "Factory1", "ProductB1"));
+            REQUIRE(IsDependency(src, "Factory2", "ProductA2"));
+            REQUIRE(IsDependency(src, "Factory2", "ProductB2"));
+        });
 }

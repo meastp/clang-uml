@@ -1,7 +1,7 @@
 /**
- * src/package_diagram/generators/plantuml/package_diagram_generator.h
+ * @file src/package_diagram/generators/plantuml/package_diagram_generator.h
  *
- * Copyright (c) 2021-2022 Bartek Kryza <bkryza@gmail.com>
+ * Copyright (c) 2021-2024 Bartek Kryza <bkryza@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
  */
 #pragma once
 
+#include "common/generators/nested_element_stack.h"
 #include "common/generators/plantuml/generator.h"
 #include "common/model/package.h"
 #include "common/model/relationship.h"
@@ -24,9 +25,6 @@
 #include "package_diagram/model/diagram.h"
 #include "package_diagram/visitor/translation_unit_visitor.h"
 #include "util/util.h"
-
-#include <cppast/cpp_entity_index.hpp>
-#include <cppast/libclang_parser.hpp>
 
 #include <filesystem>
 #include <fstream>
@@ -50,20 +48,54 @@ using clanguml::common::model::package;
 using clanguml::common::model::relationship_t;
 using namespace clanguml::util;
 
+/**
+ * @brief Package diagram PlantUML generator
+ */
 class generator : public common_generator<diagram_config, diagram_model> {
 public:
     generator(diagram_config &config, diagram_model &model);
 
-    void generate_alias(const package &c, std::ostream &ostr) const;
+    using common_generator<diagram_config, diagram_model>::generate;
 
+    /**
+     * @brief Main generator method.
+     *
+     * This method is called first and coordinates the entire diagram
+     * generation.
+     *
+     * @param ostr Output stream.
+     */
+    void generate_diagram(std::ostream &ostr) const override;
+
+    /**
+     * @brief Generate relationships originating from package `p`
+     *
+     * @param p Diagram element
+     * @param parent Output stream
+     */
     void generate_relationships(const package &p, std::ostream &ostr) const;
 
+    /**
+     * @brief Generate diagram package element
+     *
+     * @param p Package diagram element
+     * @param parent Output stream
+     */
     void generate(const package &e, std::ostream &ostr) const;
 
-    void generate(std::ostream &ostr) const;
+    /**
+     * @brief Generate package elements grouped using `together` PlantUML tag
+     *
+     * @param ostr Output stream
+     */
+    void generate_groups(std::ostream &ostr) const;
+
+private:
+    mutable common::generators::nested_element_stack<common::model::package>
+        together_group_stack_;
 };
 
-}
-}
-}
-}
+} // namespace plantuml
+} // namespace generators
+} // namespace package_diagram
+} // namespace clanguml

@@ -11,8 +11,15 @@ public:
         : private_member{i}
     {
     }
+
+    template <typename T>
+    A(T t)
+        : private_member{t.get()}
+    {
+    }
+
     A(A &&) = default;
-    A(const A &) = default;
+    A(const A &) = delete;
     virtual ~A() = default;
 
     void basic_method() { }
@@ -20,8 +27,19 @@ public:
     void const_method() const { }
     auto auto_method() { return 1; }
 
+    A &operator++()
+    {
+        private_member++;
+        return *this;
+    }
+
+    A &operator=(A &&other) noexcept { return *this; }
+    A &operator=(A &other) noexcept { return *this; }
+
+    constexpr std::size_t size() const { return private_member; }
+
     auto double_int(const int i) { return 2 * i; }
-    auto sum(const double a, const double b) { return a + b; }
+    auto sum(const double a, const double b) { return a_ + b_ + c_; }
 
     auto default_int(int i = 12) { return i + 10; }
     std::string default_string(int i, std::string s = "abc")
@@ -49,9 +67,9 @@ private:
     void private_method() { }
 
     int private_member;
-    int a, b, c;
+    int a_, b_, c_;
 };
 
 int A::static_int = 1;
-}
-}
+} // namespace t00003
+} // namespace clanguml

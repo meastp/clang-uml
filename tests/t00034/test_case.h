@@ -1,7 +1,7 @@
 /**
- * tests/t00034/test_case.cc
+ * tests/t00034/test_case.h
  *
- * Copyright (c) 2021-2022 Bartek Kryza <bkryza@gmail.com>
+ * Copyright (c) 2021-2024 Bartek Kryza <bkryza@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,36 +16,21 @@
  * limitations under the License.
  */
 
-TEST_CASE("t00034", "[test-case][class]")
+TEST_CASE("t00034")
 {
-    auto [config, db] = load_config("t00034");
+    using namespace clanguml::test;
 
-    auto diagram = config.diagrams["t00034_class"];
+    auto [config, db, diagram, model] =
+        CHECK_CLASS_MODEL("t00034", "t00034_class");
 
-    REQUIRE(diagram->name == "t00034_class");
+    CHECK_CLASS_DIAGRAM(*config, diagram, *model, [](const auto &src) {
+        REQUIRE(IsClassTemplate(src, "lift_void<T>"));
+        REQUIRE(IsClassTemplate(src, "drop_void<T>"));
+        REQUIRE(IsClass(src, "Void"));
+        REQUIRE(IsClass(src, "A"));
+        REQUIRE(IsClass(src, "R"));
 
-    auto model = generate_class_diagram(db, diagram);
-
-    REQUIRE(model->name() == "t00034_class");
-    REQUIRE(model->should_include("clanguml::t00034::A"));
-
-    auto puml = generate_class_puml(diagram, *model);
-    AliasMatcher _A(puml);
-
-    REQUIRE_THAT(puml, StartsWith("@startuml"));
-    REQUIRE_THAT(puml, EndsWith("@enduml\n"));
-
-    REQUIRE_THAT(puml, IsClassTemplate("lift_void", "T"));
-    REQUIRE_THAT(puml, IsClassTemplate("drop_void", "T"));
-    REQUIRE_THAT(puml, IsClass(_A("Void")));
-    REQUIRE_THAT(puml, IsClass(_A("A")));
-    REQUIRE_THAT(puml, IsClass(_A("R")));
-
-    REQUIRE_THAT(
-        puml, IsInstantiation(_A("lift_void<T>"), _A("lift_void<void>")));
-    REQUIRE_THAT(
-        puml, IsInstantiation(_A("drop_void<T>"), _A("drop_void<Void>")));
-
-    save_puml(
-        "./" + config.output_directory() + "/" + diagram->name + ".puml", puml);
+        REQUIRE(IsInstantiation(src, "lift_void<T>", "lift_void<void>"));
+        REQUIRE(IsInstantiation(src, "drop_void<T>", "drop_void<Void>"));
+    });
 }

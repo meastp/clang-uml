@@ -1,21 +1,26 @@
-compilation_database_dir: ..
-output_directory: puml
 diagrams:
   t40003_include:
     type: include
     # Provide the files to parse in order to look
     # for #include directives
     glob:
-      - ../../tests/t40003/include/**/*.h
-      - ../../tests/t40003/src/**/*.cc
+      - src/dependants/t1.cc
+      - src/dependencies/t2.cc
     # Render the paths relative to this directory
-    relative_to: ../../tests/t40003
     include:
-      # Include only files belonging to these paths
+      # Include files which depend on t1.h
       dependants:
-        - ../../tests/t40003/include/dependants/t1.h
+        - include/dependants/t1.h
+      # and dependencies of t2.cc
       dependencies:
-        - ../../tests/t40003/src/dependencies/t2.cc
+        - src/dependencies/t2.cc
+    exclude:
+      # Exclude files which depend on t10.h
+      dependants:
+        - include/dependants/t10.h
+      # and other dependencies of t8.h
+      dependencies:
+        - include/dependencies/t8.h
     plantuml:
       before:
         - "' t40003 test include diagram"

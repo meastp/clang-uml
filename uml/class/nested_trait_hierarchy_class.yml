@@ -1,0 +1,15 @@
+type: class
+title: Nested trait model class hierarchy
+include_relations_also_as_members: true
+generate_packages: true
+glob:
+  - src/common/model/package.cc
+include:
+  namespaces:
+    - clanguml
+  subclasses:
+    - r: ".*nested_trait.*"
+exclude:
+  access: [private, protected, public]
+using_namespace:
+  - clanguml

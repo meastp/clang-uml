@@ -1,7 +1,7 @@
 /**
- * tests/t00024/test_case.cc
+ * tests/t00024/test_case.h
  *
- * Copyright (c) 2021-2022 Bartek Kryza <bkryza@gmail.com>
+ * Copyright (c) 2021-2024 Bartek Kryza <bkryza@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,32 +16,20 @@
  * limitations under the License.
  */
 
-TEST_CASE("t00024", "[test-case][class]")
+TEST_CASE("t00024")
 {
-    auto [config, db] = load_config("t00024");
+    using namespace clanguml::test;
 
-    auto diagram = config.diagrams["t00024_class"];
+    auto [config, db, diagram, model] =
+        CHECK_CLASS_MODEL("t00024", "t00024_class");
 
-    REQUIRE(diagram->name == "t00024_class");
-
-    auto model = generate_class_diagram(db, diagram);
-
-    REQUIRE(model->name() == "t00024_class");
-    REQUIRE(model->should_include("clanguml::t00024::A"));
-
-    auto puml = generate_class_puml(diagram, *model);
-    AliasMatcher _A(puml);
-
-    REQUIRE_THAT(puml, StartsWith("@startuml"));
-    REQUIRE_THAT(puml, EndsWith("@enduml\n"));
-    REQUIRE_THAT(puml, IsAbstractClass(_A("Target")));
-    REQUIRE_THAT(puml, IsClass(_A("Target1")));
-    REQUIRE_THAT(puml, IsClass(_A("Target2")));
-    REQUIRE_THAT(puml, IsClass(_A("Proxy")));
-    REQUIRE_THAT(puml, IsBaseClass(_A("Target"), _A("Target1")));
-    REQUIRE_THAT(puml, IsBaseClass(_A("Target"), _A("Target2")));
-    REQUIRE_THAT(puml, IsBaseClass(_A("Target"), _A("Proxy")));
-
-    save_puml(
-        "./" + config.output_directory() + "/" + diagram->name + ".puml", puml);
+    CHECK_CLASS_DIAGRAM(*config, diagram, *model, [](const auto &src) {
+        REQUIRE(IsClass(src, "Target1"));
+        REQUIRE(IsClass(src, "Target2"));
+        REQUIRE(IsClass(src, "Proxy"));
+        REQUIRE(IsAbstractClass(src, "Target"));
+        REQUIRE(IsBaseClass(src, "Target", "Target1"));
+        REQUIRE(IsBaseClass(src, "Target", "Target2"));
+        REQUIRE(IsBaseClass(src, "Target", "Proxy"));
+    });
 }

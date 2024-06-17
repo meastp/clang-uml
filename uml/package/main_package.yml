@@ -1,0 +1,9 @@
+type: package
+title: Namespace (package) diagram
+glob:
+  - src/**/*.cc
+include:
+  namespaces:
+    - clanguml
+using_namespace:
+  - clanguml

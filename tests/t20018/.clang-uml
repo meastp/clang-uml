@@ -1,0 +1,11 @@
+diagrams:
+  t20018_sequence:
+    type: sequence
+    glob:
+      - t20018.cc
+    include:
+      namespaces:
+        - clanguml::t20018
+    using_namespace: clanguml::t20018
+    from:
+      - function: "clanguml::t20018::tmain()"

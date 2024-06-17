@@ -6,27 +6,40 @@ CMakeScripts
 Testing
 cmake_install.cmake
 install_manifest.txt
-compile_commands.json
+/compile_commands.json
 CTestTestfile.cmake
 Session.vim
 _deps
+_tidy
 /build/
 lib/
 bin/
 *.swp
+*.bak
 /puml/
 /debug/
 /release/
+/debug_tidy
 /.cache
 docs/diagrams
+docs/doxygen/html
+docs/doxygen/xml
+docs/doxygen/latex
+docs/contributing.md
+docs/changelog.md
 
 coverage*.info
 
 packaging/_BUILD
 packaging/conda/meta.yaml
 
+#nix
+.direnv/
+result
+
 # CLion
 
 .idea/
 cmake-build-
 cmake-build-*
+.run/

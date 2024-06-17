@@ -1,7 +1,7 @@
 /**
- * tests/t00031/test_case.cc
+ * tests/t00031/test_case.h
  *
- * Copyright (c) 2021-2022 Bartek Kryza <bkryza@gmail.com>
+ * Copyright (c) 2021-2024 Bartek Kryza <bkryza@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,43 +16,27 @@
  * limitations under the License.
  */
 
-TEST_CASE("t00031", "[test-case][class]")
+TEST_CASE("t00031")
 {
-    auto [config, db] = load_config("t00031");
+    using namespace clanguml::test;
 
-    auto diagram = config.diagrams["t00031_class"];
+    auto [config, db, diagram, model] =
+        CHECK_CLASS_MODEL("t00031", "t00031_class");
 
-    REQUIRE(diagram->name == "t00031_class");
+    CHECK_CLASS_DIAGRAM(*config, diagram, *model, [](const auto &src) {
+        REQUIRE(IsClass(src, "A"));
+        REQUIRE(IsEnum(src, "B"));
+        REQUIRE(IsClass(src, "D"));
+        REQUIRE(IsClassTemplate(src, "C<T>"));
 
-    auto model = generate_class_diagram(db, diagram);
-
-    REQUIRE(model->name() == "t00031_class");
-    REQUIRE(model->should_include("clanguml::t00031::A"));
-
-    auto puml = generate_class_puml(diagram, *model);
-    AliasMatcher _A(puml);
-
-    REQUIRE_THAT(puml, StartsWith("@startuml"));
-    REQUIRE_THAT(puml, EndsWith("@enduml\n"));
-
-    REQUIRE_THAT(puml, IsClass(_A("A")));
-    REQUIRE_THAT(puml, IsEnum(_A("B")));
-    REQUIRE_THAT(puml, IsClassTemplate("C", "T"));
-    REQUIRE_THAT(puml, IsClass(_A("D")));
-
-    REQUIRE_THAT(puml,
-        IsAssociationWithStyle(
-            _A("R"), _A("A"), "+aaa", "#red,dashed,thickness=2"));
-    REQUIRE_THAT(puml,
-        IsCompositionWithStyle(
-            _A("R"), _A("B"), "+bbb", "#green,dashed,thickness=4"));
-    REQUIRE_THAT(puml,
-        IsAggregationWithStyle(
-            _A("R"), _A("C<int>"), "+ccc", "#blue,dotted,thickness=8"));
-    REQUIRE_THAT(puml,
-        IsAssociationWithStyle(
-            _A("R"), _A("D"), "+ddd", "#blue,plain,thickness=16"));
-
-    save_puml(
-        "./" + config.output_directory() + "/" + diagram->name + ".puml", puml);
+        REQUIRE(IsAssociation<Public>(
+            src, "R", "A", "aaa", "", "", "[#red,dashed,thickness=2]"));
+        REQUIRE(IsComposition<Public>(
+            src, "R", "B", "bbb", "", "", "[#green,dashed,thickness=4]"));
+        REQUIRE(IsDependency(src, "R", "B"));
+        REQUIRE(IsAggregation<Public>(
+            src, "R", "C<int>", "ccc", "", "", "[#blue,dotted,thickness=8]"));
+        REQUIRE(IsAssociation<Public>(
+            src, "R", "D", "ddd", "", "", "[#blue,plain,thickness=16]"));
+    });
 }

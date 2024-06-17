@@ -1,0 +1,40 @@
+diagrams:
+  t00068_r0_class:
+    type: class
+    title: AAA context of radius 0
+    glob:
+      - t00068.cc
+    include:
+      namespaces:
+        - clanguml::t00068
+      context:
+        - match:
+            radius: 0
+            pattern: clanguml::t00068::AAA
+    using_namespace: clanguml::t00068
+  t00068_r1_class:
+    type: class
+    title: AAA context of radius 1
+    glob:
+      - t00068.cc
+    include:
+      namespaces:
+        - clanguml::t00068
+      context:
+        - match:
+            radius: 1
+            pattern: clanguml::t00068::AAA
+    using_namespace: clanguml::t00068
+  t00068_r2_class:
+    type: class
+    title: AAA context of radius 2
+    glob:
+      - t00068.cc
+    include:
+      namespaces:
+        - clanguml::t00068
+      context:
+        - match:
+            radius: 2
+            pattern: clanguml::t00068::AAA
+    using_namespace: clanguml::t00068

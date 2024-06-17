@@ -1,7 +1,7 @@
 /**
  * tests/t30007/test_case.cc
  *
- * Copyright (c) 2021-2022 Bartek Kryza <bkryza@gmail.com>
+ * Copyright (c) 2021-2024 Bartek Kryza <bkryza@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,34 +16,24 @@
  * limitations under the License.
  */
 
-TEST_CASE("t30007", "[test-case][package]")
+TEST_CASE("t30007")
 {
-    auto [config, db] = load_config("t30007");
+    using namespace clanguml::test;
+    using namespace std::string_literals;
 
-    auto diagram = config.diagrams["t30007_package"];
+    auto [config, db, diagram, model] =
+        CHECK_PACKAGE_MODEL("t30007", "t30007_package");
 
-    REQUIRE(diagram->name == "t30007_package");
+    CHECK_PACKAGE_DIAGRAM(*config, diagram, *model, [](const auto &src) {
+        REQUIRE(IsNamespacePackage(src, "A"s));
+        REQUIRE(IsNamespacePackage(src, "A"s, "AA"s));
+        REQUIRE(IsNamespacePackage(src, "B"s));
+        REQUIRE(IsNamespacePackage(src, "C"s));
 
-    auto model = generate_package_diagram(db, diagram);
+        REQUIRE(IsDependency(src, "AA", "B"));
+        REQUIRE(IsDependency(src, "AA", "C"));
 
-    REQUIRE(model->name() == "t30007_package");
-
-    auto puml = generate_package_puml(diagram, *model);
-    AliasMatcher _A(puml);
-
-    REQUIRE_THAT(puml, StartsWith("@startuml"));
-    REQUIRE_THAT(puml, EndsWith("@enduml\n"));
-
-    REQUIRE_THAT(puml, IsPackage("A"));
-    REQUIRE_THAT(puml, IsPackage("B"));
-    REQUIRE_THAT(puml, IsPackage("C"));
-
-    REQUIRE_THAT(puml, IsDependency(_A("AA"), _A("B")));
-    REQUIRE_THAT(puml, IsDependency(_A("AA"), _A("C")));
-
-    REQUIRE_THAT(puml, IsLayoutHint(_A("C"), "up", _A("AA")));
-    REQUIRE_THAT(puml, IsLayoutHint(_A("C"), "left", _A("B")));
-
-    save_puml(
-        "./" + config.output_directory() + "/" + diagram->name + ".puml", puml);
+        REQUIRE(IsLayoutHint(src, "C", "up", "AA"));
+        REQUIRE(IsLayoutHint(src, "C", "left", "B"));
+    });
 }

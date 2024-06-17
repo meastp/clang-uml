@@ -1,12 +1,15 @@
-compilation_database_dir: ..
-output_directory: puml
 diagrams:
   t00028_class:
     type: class
     glob:
-      - ../../tests/t00028/t00028.cc
-    using_namespace:
-      - clanguml::t00028
+      - t00028.cc
+    using_namespace: clanguml::t00028
     include:
       namespaces:
         - clanguml::t00028
+    plantuml:
+      after:
+        - >
+          note left of {{ alias("R") }}::ccc
+            Reference to C.
+          end note

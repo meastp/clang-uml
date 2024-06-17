@@ -4,7 +4,7 @@ test_cases:
       title: Basic class inheritance
       description:
     - name: t00003
-      title: Class field and methods
+      title: Class fields and methods
       description:
     - name: t00004
       title: Nested classes and enums
@@ -135,12 +135,255 @@ test_cases:
     - name: t00046
       title: Test case for root namespace handling with packages
       description:
+    - name: t00047
+      title: Test case for recursive variadic template
+      description:
+    - name: t00048
+      title: Test case for unique entity id with multiple translation units
+      description:
+    - name: t00049
+      title: Test case configurable type aliases
+      description:
+    - name: t00050
+      title: Test case for generating notes from comments using jinja templates
+      description:
+    - name: t00051
+      title: Test case for relative paths in lambda names
+      description:
+    - name: t00052
+      title: Test case for template methods rendering
+      description:
+    - name: t00053
+      title: Test case for `together` layout hint in class diagram
+      description:
+    - name: t00054
+      title: Test case for `together` layout hint in class diagram with rendered namespaces
+      description:
+    - name: t00055
+      title: Test case for `row` and `column` layout hints
+      description:
+    - name: t00056
+      title: Basic C++20 concepts test case
+      description:
+    - name: t00057
+      title: Test case C99/C11 translation units with structs and unions
+      description:
+    - name: t00058
+      title: Test case for concepts with variadic parameters and type aliases
+      description:
+    - name: t00059
+      title: Non-virtual abstract factory pattern using concepts test case
+      description:
+    - name: t00060
+      title: Parents (base classes) diagram filter test case
+      description:
+    - name: t00061
+      title: Paths diagram filter test case
+      description:
+    - name: t00062
+      title: Template specialization matching based on deduced context
+      description:
+    - name: t00063
+      title: Element types diagram filter test case
+      description:
+    - name: t00064
+      title: Template type list test case
+      description:
+    - name: t00065
+      title: Class diagram with packages from directory structure
+      description:
+    - name: t00066
+      title: Class fields and methods without grouping and sorting
+      description:
+    - name: t00067
+      title: Class method type filter test case
+      description:
+    - name: t00068
+      title: Context filter radius parameter test case
+      description:
+    - name: t00069
+      title: Coroutine methods in class diagrams
+      description:
+    - name: t00070
+      title: Diagram filter based on C++20 modules
+      description:
+    - name: t00071
+      title: Class diagram with C++20 modules generated as packages
+      description:
+    - name: t00072
+      title: Class diagram with C++20 module partitions generated as packages
+      description:
+    - name: t00073
+      title: Class diagram for template overload pattern
+      description:
+    - name: t00074
+      title: Test case for rendering concepts without requirements
+      description:
+    - name: t00075
+      title: Test case for class diagram styles in config file
+      description:
   Sequence diagrams:
     - name: t20001
       title: Basic sequence diagram test case
       description:
     - name: t20002
       title: Free function sequence diagram test case
+      description:
+    - name: t20003
+      title: Function template sequence diagram test case
+      description:
+    - name: t20004
+      title: Function template instantiation sequence diagram test case
+      description:
+    - name: t20005
+      title: Class template basic sequence diagram
+      description:
+    - name: t20006
+      title: Class template specialization basic sequence diagram
+      description:
+    - name: t20007
+      title: Class template variadic argument list sequence diagram
+      description:
+    - name: t20008
+      title: Constexpr if sequence diagram test case
+      description:
+    - name: t20009
+      title: Smart pointer dereference call expression test case
+      description:
+    - name: t20010
+      title: Container sequence diagram test case
+      description:
+    - name: t20011
+      title: Recursive calls sequence diagram test case
+      description:
+    - name: t20012
+      title: Lambda expression call sequence diagram test case
+      description:
+    - name: t20013
+      title: Function and method arguments in sequence diagrams test case
+      description:
+    - name: t20014
+      title: Multiple translation units sequence diagram test case
+      description:
+    - name: t20015
+      title: Class exclusion by namespace in sequence diagram test case
+      description:
+    - name: t20016
+      title: Template method specialization sequence diagram test case
+      description:
+    - name: t20017
+      title: Test case for combine_free_functions_into_file_participants option
+      description:
+    - name: t20018
+      title: Recursive template sequence diagram test case
+      description:
+    - name: t20019
+      title: Curiously Recurring Template Pattern sequence diagram test case
+      description:
+    - name: t20020
+      title: If statement sequence diagram test case
+      description:
+    - name: t20021
+      title: Loop statements sequence diagram test case
+      description:
+    - name: t20022
+      title: Forward class declaration sequence diagram test case
+      description:
+    - name: t20023
+      title: Try/catch statement sequence diagram test case
+      description:
+    - name: t20024
+      title: Switch statement sequence diagram test case
+      description:
+    - name: t20025
+      title: Skip decorator sequence diagram test case
+      description:
+    - name: t20026
+      title: Virtual method call sequence diagram test case
+      description:
+    - name: t20027
+      title: Filter call expressions based on access test case
+      description:
+    - name: t20028
+      title: Conditional (ternary) '?:' operator test case
+      description:
+    - name: t20029
+      title: Combined feature sequence diagram test case
+      description:
+    - name: t20030
+      title: Constructor and operator call test case
+      description:
+    - name: t20031
+      title: Callee type sequence diagram filter test case
+      description:
+    - name: t20032
+      title: Return type generation option sequence diagram test case
+      description:
+    - name: t20033
+      title: Control statement text in sequence diagram test case
+      description:
+    - name: t20034
+      title: Test case for rendering all call chains from one activity to another (from_to)
+      description:
+    - name: t20035
+      title: from_to sequence diagram test case with free functions
+      description:
+    - name: t20036
+      title: Test case for rendering all call chains leading to an activity (to)
+      description:
+    - name: t20037
+      title: Test case checking if activities in static variable declarations appear only once
+      description:
+    - name: t20038
+      title: Sequence diagram comment decorator test case
+      description:
+    - name: t20039
+      title: Test case for type aliases config option in sequence diagrams
+      description:
+    - name: t20040
+      title: Test case for recursive variadic template function call
+      description:
+    - name: t20041
+      title: Test case for recursive variadic template class call
+      description:
+    - name: t20042
+      title: Test case for template overload pattern
+      description:
+    - name: t20043
+      title: Test case for elements diagram filter in sequence diagrams
+      description:
+    - name: t20044
+      title: Test case for template method call expressions with callables
+      description:
+    - name: t20045
+      title: Test case for template function call expressions with callables
+      description:
+    - name: t20046
+      title: Test case for call expressions in nested lambdas
+      description:
+    - name: t20047
+      title: Test case for 'call' comment directive
+      description:
+    - name: t20048
+      title: Test case for message comments
+      description:
+    - name: t20049
+      title: Test case for CUDA kernel calls
+      description:
+    - name: t20050
+      title: Test case for CUDA kernel calls with participants combined to file
+      description:
+    - name: t20051
+      title: Test case for CUDA calls callee_type filter
+      description:
+    - name: t20052
+      title: Test case for inlining lambda operator calls
+      description:
+    - name: t20053
+      title: Test case for inlining nested lambda operator calls
+      description:
+    - name: t20054
+      title: Test case for sequence diagram with nested classes
       description:
   Package diagrams:
     - name: t30001
@@ -166,6 +409,27 @@ test_cases:
       description:
     - name: t30008
       title: Dependants and dependencies package diagram filter test
+      description:
+    - name: t30009
+      title: Together layout hint test
+      description:
+    - name: t30010
+      title: Package diagram with packages from directory structure
+      description:
+    - name: t30011
+      title: Package diagram with packages from directory structure for plain C
+      description:
+    - name: t30012
+      title: C++20 modules package diagram test
+      description:
+    - name: t30013
+      title: C++20 modules package dependencies diagram test
+      description:
+    - name: t30014
+      title: C++20 modules package diagram test with partitions
+      description:
+    - name: t30015
+      title: C++20 modules package diagram test with partition dependencies
       description:
   Include diagrams:
     - name: t40001

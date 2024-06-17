@@ -1,7 +1,7 @@
 /**
- * tests/t00037/test_case.cc
+ * tests/t00037/test_case.h
  *
- * Copyright (c) 2021-2022 Bartek Kryza <bkryza@gmail.com>
+ * Copyright (c) 2021-2024 Bartek Kryza <bkryza@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,29 +16,34 @@
  * limitations under the License.
  */
 
-TEST_CASE("t00037", "[test-case][class]")
+TEST_CASE("t00037")
 {
-    auto [config, db] = load_config("t00037");
+    using namespace clanguml::test;
 
-    auto diagram = config.diagrams["t00037_class"];
+    auto [config, db, diagram, model] =
+        CHECK_CLASS_MODEL("t00037", "t00037_class");
 
-    REQUIRE(diagram->name == "t00037_class");
     REQUIRE(diagram->generate_packages() == true);
 
-    auto model = generate_class_diagram(db, diagram);
+    CHECK_CLASS_DIAGRAM(*config, diagram, *model, [](const auto &src) {
+        REQUIRE(IsClass(src, "ST"));
+        REQUIRE(IsClass(src, "A"));
+        REQUIRE(IsClass(src, "ST::(units)"));
+        REQUIRE(IsClass(src, "ST::(dimensions)"));
+        REQUIRE(IsClass(src, "ST::(bars)"));
 
-    REQUIRE(model->name() == "t00037_class");
+        REQUIRE(
+            IsAggregation<Public>(src, "ST", "ST::(dimensions)", "dimensions"));
+        REQUIRE(IsAggregation<Private>(src, "ST", "ST::(units)", "units"));
+        REQUIRE(
+            IsAggregation<Public>(src, "ST", "ST::(bars)", "bars", "", "10"));
+        REQUIRE(IsAggregation<Private>(
+            src, "ST", "S", "s", "", std::to_string(4 * 3 * 2)));
 
-    auto puml = generate_class_puml(diagram, *model);
-    AliasMatcher _A(puml);
+        REQUIRE(IsField<Private>(src, "ST", "s", "S[4][3][2]"));
 
-    REQUIRE_THAT(puml, StartsWith("@startuml"));
-    REQUIRE_THAT(puml, EndsWith("@enduml\n"));
-
-    REQUIRE_THAT(puml, IsClass(_A("ST")));
-    REQUIRE_THAT(puml, IsClass(_A("A")));
-    REQUIRE_THAT(puml, IsInnerClass(_A("ST"), _A("<<anonymous>>")));
-
-    save_puml(
-        "./" + config.output_directory() + "/" + diagram->name + ".puml", puml);
+        REQUIRE(IsField<Public>(src, "ST", "bars", "ST::(bars)[10]"));
+        REQUIRE(IsField<Public>(src, "ST", "dimensions", "ST::(dimensions)"));
+        REQUIRE(IsField<Private>(src, "ST", "units", "ST::(units)"));
+    });
 }

@@ -1,7 +1,7 @@
 /**
- * src/common/model/source_file.cc
+ * @file src/common/model/source_file.cc
  *
- * Copyright (c) 2021-2022 Bartek Kryza <bkryza@gmail.com>
+ * Copyright (c) 2021-2024 Bartek Kryza <bkryza@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,3 +17,22 @@
  */
 
 #include "source_file.h"
+
+namespace clanguml::common::model {
+
+std::string to_string(source_file_t sf)
+{
+    switch (sf) {
+    case source_file_t::kDirectory:
+        return "directory";
+    case source_file_t::kHeader:
+        return "header";
+    case source_file_t::kImplementation:
+        return "implementation";
+    default:
+        assert(false);
+        return "";
+    }
+}
+
+} // namespace clanguml::common::model

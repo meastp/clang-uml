@@ -1,7 +1,7 @@
 /**
- * src/common/model/package.h
+ * @file src/common/model/package.h
  *
- * Copyright (c) 2021-2022 Bartek Kryza <bkryza@gmail.com>
+ * Copyright (c) 2021-2024 Bartek Kryza <bkryza@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,11 +19,12 @@
 
 #include "common/model/element.h"
 #include "common/model/nested_trait.h"
+#include "common/model/path.h"
 #include "common/model/stylable_element.h"
+#include "common/types.h"
 #include "util/util.h"
 
 #include <spdlog/spdlog.h>
-#include <type_safe/optional_ref.hpp>
 
 #include <set>
 #include <string>
@@ -31,40 +32,66 @@
 
 namespace clanguml::common::model {
 
+/**
+ * @brief Diagram element representing namespace or directory package
+ *
+ * @embed{package_hierarchy_class.svg}
+ */
 class package : public element,
                 public stylable_element,
-                public nested_trait<element, namespace_> {
+                public nested_trait<element, path> {
 public:
-    package(const common::model::namespace_ &using_namespace);
+    package(const common::model::path &using_namespace,
+        path_type pt = path_type::kNamespace);
 
     package(const package &) = delete;
     package(package &&) = default;
     package &operator=(const package &) = delete;
     package &operator=(package &&) = delete;
 
+    std::string type_name() const override { return "package"; }
+
     std::string full_name(bool relative) const override;
 
+    /**
+     * Returns whether the namespace is deprecated.
+     *
+     * @return True, if namespace is deprecated.
+     */
     bool is_deprecated() const;
 
+    /**
+     * Set namespace deprecation status.
+     *
+     * @param deprecated True, if namespace is deprecated
+     */
     void set_deprecated(bool deprecated);
 
-    void add_package(std::unique_ptr<common::model::package> &&p);
+    /**
+     * @brief Generate Doxygen style HTML link for the class.
+     *
+     * This method generates a link, which can be used in SVG diagrams to
+     * create links from classes to Doxygen documentation pages.
+     *
+     * @return Doxygen-style HTML link for the class.
+     */
+    std::optional<std::string> doxygen_link() const override;
 
 private:
     bool is_deprecated_{false};
 };
-}
+} // namespace clanguml::common::model
 
 namespace std {
 template <>
-struct hash<type_safe::object_ref<const clanguml::common::model::package>> {
+struct hash<std::reference_wrapper<clanguml::common::model::package>> {
     std::size_t operator()(
-        const type_safe::object_ref<const clanguml::common::model::package>
-            &key) const
+        const std::reference_wrapper<clanguml::common::model::package> &key)
+        const
     {
-        using clanguml::common::model::package;
+        using clanguml::common::eid_t;
 
-        return std::hash<std::string>{}(key.get().full_name(false));
+        return key.get().id().value();
     }
 };
-}
+} // namespace std

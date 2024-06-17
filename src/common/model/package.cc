@@ -1,7 +1,7 @@
 /**
- * src/common/model/package.cc
+ * @file src/common/model/package.cc
  *
- * Copyright (c) 2021-2022 Bartek Kryza <bkryza@gmail.com>
+ * Copyright (c) 2021-2024 Bartek Kryza <bkryza@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,8 @@
 #include <sstream>
 
 namespace clanguml::common::model {
-package::package(const common::model::namespace_ &using_namespace)
-    : element{using_namespace}
+package::package(const common::model::namespace_ &using_namespace, path_type pt)
+    : element{using_namespace, pt}
 {
 }
 
@@ -40,4 +40,11 @@ bool package::is_deprecated() const { return is_deprecated_; }
 
 void package::set_deprecated(bool deprecated) { is_deprecated_ = deprecated; }
 
+std::optional<std::string> package::doxygen_link() const
+{
+    auto name = full_name(false);
+    util::replace_all(name, "_", "__");
+    util::replace_all(name, "::", "_1_1");
+    return fmt::format("namespace{}.html", name);
 }
+} // namespace clanguml::common::model

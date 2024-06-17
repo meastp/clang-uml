@@ -1,0 +1,21 @@
+type: class
+title: Class diagram model
+include_relations_also_as_members: false
+generate_method_arguments: none
+generate_packages: true
+glob:
+  - src/common/model/*.cc
+  - src/class_diagram/model/*.cc
+include:
+  namespaces:
+    - clanguml::common::model
+    - clanguml::class_diagram::model
+exclude:
+  relationships:
+    - dependency
+  access:
+    - public
+    - protected
+    - private
+using_namespace:
+  - clanguml
